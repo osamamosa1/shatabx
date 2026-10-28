@@ -7,6 +7,7 @@ import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/assets.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
@@ -160,14 +161,33 @@ class _Hero extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            Center(
-              child: Icon(
-                engineer ? Icons.engineering_rounded : Icons.apartment_rounded,
-                size: 92.r,
-                color: Colors.white.withValues(alpha: 0.85),
+            if (engineer)
+              Image.asset(
+                ImgAssets.loginEngineer,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.high,
+              )
+            else
+              Center(
+                child: Image.asset(
+                  ImgAssets.projectSa,
+                  height: 150.h,
+                  fit: BoxFit.contain,
+                ),
               ),
-            ),
+            if (engineer)
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x33000000), Color(0x990E2744)],
+                  ),
+                ),
+              ),
             PositionedDirectional(
               top: 8.h,
               start: 16.w,

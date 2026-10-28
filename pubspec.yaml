@@ -23,6 +23,7 @@ dependencies:
   google_fonts: ^6.3.2
   shared_preferences: ^2.5.3
   animate_do: ^5.1.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - lang/
+    - assets/images/
+    - assets/icons/

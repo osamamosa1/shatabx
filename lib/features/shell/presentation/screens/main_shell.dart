@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_motion.dart';
+import '../../../../core/widgets/app_svg.dart';
 import '../cubit/bottom_nav_cubit.dart';
 
 class _TabFade extends StatefulWidget {
@@ -54,11 +56,11 @@ class MainShell extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  static const _icons = <IconData>[
-    Icons.home_rounded,
-    Icons.apartment_rounded,
-    Icons.fact_check_rounded,
-    Icons.person_rounded,
+  static const _icons = <String>[
+    SvgAssets.home,
+    SvgAssets.projects,
+    SvgAssets.reports,
+    SvgAssets.profile,
   ];
 
   static const _labels = ['home', 'projects', 'reports', 'profile'];
@@ -96,10 +98,10 @@ class MainShell extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            AppSvg(
                               _icons[index],
-                              color: selected ? AppColors.primary : AppColors.hint,
                               size: 24.r,
+                              color: selected ? AppColors.primary : AppColors.hint,
                             ),
                             SizedBox(height: 2.h),
                             Text(

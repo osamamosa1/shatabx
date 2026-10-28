@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
+import '../../../../core/widgets/app_svg.dart';
 import '../../domain/entities/user_entity.dart';
 import '../cubit/select_account_type_cubit.dart';
 
@@ -47,7 +49,7 @@ class AccountTypeScreen extends StatelessWidget {
                 _TypeCard(
                   title: context.tr('company_type'),
                   subtitle: context.tr('company_type_sub'),
-                  icon: Icons.apartment_rounded,
+                  icon: SvgAssets.company,
                   onTap: () => context
                       .read<SelectAccountTypeCubit>()
                       .select(AccountRole.company),
@@ -56,7 +58,7 @@ class AccountTypeScreen extends StatelessWidget {
                 _TypeCard(
                   title: context.tr('engineer_type'),
                   subtitle: context.tr('engineer_type_sub'),
-                  icon: Icons.engineering_rounded,
+                  icon: SvgAssets.engineer,
                   onTap: () => context
                       .read<SelectAccountTypeCubit>()
                       .select(AccountRole.engineer),
@@ -80,7 +82,7 @@ class _TypeCard extends StatelessWidget {
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String icon;
   final VoidCallback onTap;
 
   @override
@@ -106,7 +108,7 @@ class _TypeCard extends StatelessWidget {
                   color: AppColors.primarySoft,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 30.r),
+                child: AppSvg(icon, color: AppColors.primary, size: 30.r),
               ),
               SizedBox(width: 12.w),
               Expanded(

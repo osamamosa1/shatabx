@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/utils/values/app_colors.dart';
+import '../../core/utils/values/text_styles.dart';
 
 ThemeData getAppTheme(Locale locale) {
+  TextStyles.setLocale(locale);
+
   final textTheme = locale.languageCode == 'en'
       ? GoogleFonts.dmSansTextTheme()
       : GoogleFonts.cairoTextTheme();
@@ -31,7 +34,9 @@ ThemeData getAppTheme(Locale locale) {
       scrolledUnderElevation: 0,
       centerTitle: true,
       foregroundColor: AppColors.text,
-      titleTextStyle: textTheme.titleLarge?.copyWith(
+      titleTextStyle: (locale.languageCode == 'en'
+              ? GoogleFonts.dmSans
+              : GoogleFonts.cairo)(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: AppColors.text,

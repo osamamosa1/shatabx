@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/assets.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/my_default_button.dart';
@@ -184,10 +185,10 @@ class _OnboardingArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (kind) {
-      _Art.projects => Icons.apartment_rounded,
-      _Art.tracking => Icons.map_rounded,
-      _Art.quality => Icons.verified_rounded,
+    final asset = switch (kind) {
+      _Art.projects => ImgAssets.onboarding1,
+      _Art.tracking => ImgAssets.onboarding2,
+      _Art.quality => ImgAssets.onboarding3,
     };
     return Container(
       width: double.infinity,
@@ -195,57 +196,16 @@ class _OnboardingArt extends StatelessWidget {
         gradient: AppGradients.wash,
         borderRadius: BorderRadius.circular(28.r),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120.r,
-            height: 120.r,
-            decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 64.r, color: AppColors.primary),
-          ),
-          SizedBox(height: 16.h),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              _MiniStat(context.isArabic ? '78٪' : '78%', context.isArabic ? 'فيلا النرجس' : 'Narjis'),
-              _MiniStat(context.isArabic ? '46٪' : '46%', context.isArabic ? 'الملقا' : 'Malqa'),
-              _MiniStat(context.isArabic ? '92٪' : '92%', context.isArabic ? 'برج العليا' : 'Olaya'),
-            ],
-          ),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
+        child: Image.asset(
+          asset,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
       ),
     );
   }
 }
 
-class _MiniStat extends StatelessWidget {
-  const _MiniStat(this.value, this.label);
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 92.w,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Text(value, style: TextStyles.bold18(color: AppColors.primary)),
-          Text(label, style: TextStyles.regular12(color: AppColors.textSecondary)),
-        ],
-      ),
-    );
-  }
-}

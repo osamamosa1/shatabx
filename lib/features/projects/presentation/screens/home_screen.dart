@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_motion.dart';
+import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
@@ -66,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       IconButton(
                         onPressed: () => context.push(AppRoutes.notifications),
-                        icon: const Icon(Icons.notifications_none_rounded, color: AppColors.text),
+                        icon: AppSvg(SvgAssets.notification, size: 24, color: AppColors.text),
                       ),
                     ],
                   ),
@@ -76,13 +78,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   delay: const Duration(milliseconds: 40),
                   child: Row(
                     children: [
-                      Expanded(child: _Stat(context.tr('projects'), '${projects.length}', Icons.apartment_rounded)),
+                      Expanded(child: _Stat(context.tr('projects'), '${projects.length}', SvgAssets.projects)),
                       SizedBox(width: 10.w),
                       Expanded(
                         child: _Stat(
                           context.tr('in_progress'),
                           '${projects.where((p) => p.status == ProjectStatus.inProgress).length}',
-                          Icons.timelapse_rounded,
+                          SvgAssets.templates,
                         ),
                       ),
                     ],
@@ -131,7 +133,7 @@ class _Stat extends StatelessWidget {
 
   final String label;
   final String value;
-  final IconData icon;
+  final String icon;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +147,7 @@ class _Stat extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary),
+          AppSvg(icon, color: AppColors.primary, size: 22.r),
           SizedBox(width: 8.w),
           Expanded(
             child: Column(

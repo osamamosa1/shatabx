@@ -2,7 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'fonts.dart';
+
 abstract class TextStyles {
+  static String _languageCode = 'ar';
+
+  static void setLocale(Locale locale) {
+    _languageCode = locale.languageCode;
+  }
+
+  static bool get _isEnglish => _languageCode == 'en';
+
   static TextStyle style({
     double size = 14,
     FontWeight weight = FontWeight.w400,
@@ -10,12 +20,36 @@ abstract class TextStyles {
     double? height,
     String? family,
   }) {
-    return TextStyle(
-      fontSize: size.sp,
+    final fontSize = size.sp;
+    if (family == Fonts.brand) {
+      return GoogleFonts.poppins(
+        fontSize: fontSize,
+        fontWeight: weight,
+        color: color,
+        height: height,
+      );
+    }
+    if (family == Fonts.display) {
+      return GoogleFonts.montserrat(
+        fontSize: fontSize,
+        fontWeight: weight,
+        color: color,
+        height: height,
+      );
+    }
+    if (_isEnglish || family == Fonts.latin) {
+      return GoogleFonts.dmSans(
+        fontSize: fontSize,
+        fontWeight: weight,
+        color: color,
+        height: height,
+      );
+    }
+    return GoogleFonts.cairo(
+      fontSize: fontSize,
       fontWeight: weight,
       color: color,
       height: height,
-      fontFamily: family,
     );
   }
 
@@ -29,6 +63,18 @@ abstract class TextStyles {
       fontWeight: weight,
       color: color,
       letterSpacing: -0.4,
+    );
+  }
+
+  static TextStyle montserrat({
+    double size = 18,
+    FontWeight weight = FontWeight.w600,
+    Color? color,
+  }) {
+    return GoogleFonts.montserrat(
+      fontSize: size.sp,
+      fontWeight: weight,
+      color: color,
     );
   }
 

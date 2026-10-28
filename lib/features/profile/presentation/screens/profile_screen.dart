@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
+import '../../../../core/widgets/app_svg.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
 import '../../../language/presentation/cubit/locale_cubit.dart';
 
@@ -49,26 +51,32 @@ class ProfileScreen extends StatelessWidget {
             SizedBox(height: 12.h),
             _Tile(
               title: context.tr('complete_profile_short'),
+              icon: SvgAssets.profile,
               onTap: () => context.push(AppRoutes.completeProfile),
             ),
             _Tile(
               title: context.tr('templates'),
+              icon: SvgAssets.templates,
               onTap: () => context.push(AppRoutes.templates),
             ),
             _Tile(
               title: context.tr('notifications'),
+              icon: SvgAssets.notification,
               onTap: () => context.push(AppRoutes.notifications),
             ),
             _Tile(
               title: context.tr('terms'),
+              icon: SvgAssets.terms,
               onTap: () => context.push(AppRoutes.terms),
             ),
             _Tile(
               title: '${context.tr('language')}: ${locale == 'ar' ? context.tr('arabic') : context.tr('english')}',
+              icon: SvgAssets.language,
               onTap: () => context.read<LocaleCubit>().setLocale(locale == 'ar' ? 'en' : 'ar'),
             ),
             _Tile(
               title: context.tr('logout'),
+              icon: SvgAssets.logout,
               danger: true,
               onTap: () async {
                 await context.read<SessionCubit>().logout();
@@ -83,14 +91,21 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.title, required this.onTap, this.danger = false});
+  const _Tile({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.danger = false,
+  });
 
   final String title;
+  final String icon;
   final VoidCallback onTap;
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
+    final color = danger ? AppColors.error : AppColors.text;
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: Material(
@@ -103,18 +118,20 @@ class _Tile extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
             child: Row(
               children: [
+                AppSvg(icon, size: 20.r, color: color),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Text(
                     title,
                     textAlign: TextAlign.start,
-                    style: TextStyles.medium16(color: danger ? AppColors.error : AppColors.text),
+                    style: TextStyles.medium16(color: color),
                   ),
                 ),
-                Icon(
+                AppSvg(
                   Directionality.of(context) == TextDirection.rtl
-                      ? Icons.chevron_left_rounded
-                      : Icons.chevron_right_rounded,
-                  size: 20.r,
+                      ? SvgAssets.arrowBack
+                      : SvgAssets.arrowForward,
+                  size: 16.r,
                   color: AppColors.hint,
                 ),
               ],

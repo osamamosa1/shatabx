@@ -7,9 +7,11 @@ import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
+import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
 import '../../domain/params/auth_params.dart';
@@ -103,7 +105,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 controller: _address,
                 label: context.tr('company_address'),
                 hint: context.tr('address_hint'),
-                prefix: Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20.r),
+                prefix: AppSvg(SvgAssets.location, color: AppColors.primary, size: 20.r),
                 validator: (value) => Validator.requiredField(context, value, label: context.tr('address_label')),
               ),
               SizedBox(height: 14.h),
@@ -185,7 +187,7 @@ class _UploadTile extends StatelessWidget {
                   style: TextStyles.medium14(color: AppColors.primary),
                 ),
                 SizedBox(width: 6.w),
-                Icon(Icons.file_upload_outlined, color: AppColors.primary, size: 18.r),
+                AppSvg(SvgAssets.upload, color: AppColors.primary, size: 18.r),
               ],
             ),
           ),

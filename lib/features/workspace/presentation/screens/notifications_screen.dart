@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../core/utils/values/app_colors.dart';
+import '../../../../core/utils/values/assets.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -53,6 +54,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   final items = state is GetNotificationsLoaded
                       ? state.items
                       : <NotificationEntity>[];
+                  if (items.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.r),
+                        child: Image.asset(
+                          ImgAssets.emptyNotifications,
+                          width: 160.w,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    );
+                  }
                   return ListView.separated(
                     padding: EdgeInsets.all(16.r),
                     itemCount: items.length,
