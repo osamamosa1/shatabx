@@ -8,90 +8,236 @@ import '../../../../config/routes/app_routes.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/svg_manager.dart';
 import '../../../../core/utils/values/text_styles.dart';
+import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_svg.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
-import '../../../language/presentation/cubit/locale_cubit.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  void _confirmLogout(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return SoftZoom(
+          child: Dialog(
+            backgroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24.r),
+            ),
+          child: Padding(
+            padding: EdgeInsets.all(20.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56.r,
+                  height: 56.r,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.statusErrorLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: AppSvg(
+                    SvgAssets.logout,
+                    size: 26.r,
+                    color: AppColors.error,
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                Text(
+                  context.tr('logout_confirm_title'),
+                  style: TextStyles.bold18(color: AppColors.text),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  context.tr('logout_confirm_sub'),
+                  textAlign: TextAlign.center,
+                  style: TextStyles.regular14(color: AppColors.textSecondary),
+                ),
+                SizedBox(height: 20.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.fromHeight(44.h),
+                          side: const BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: Text(
+                          context.tr('cancel'),
+                          style: TextStyles.medium14(color: AppColors.text),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          await context.read<SessionCubit>().logout();
+                          if (context.mounted) {
+                            context.go(AppRoutes.accountType);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          minimumSize: Size.fromHeight(44.h),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: Text(
+                          context.tr('logout'),
+                          style: TextStyles.medium14(color: AppColors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionCubit>().state;
-    final user = session is SessionAuthenticated ? session.user : null;
-    final locale = context.watch<LocaleCubit>().state.locale.languageCode;
+    final isEngineer =
+        session is SessionAuthenticated &&
+        session.user.role == AccountRole.engineer;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 24.h),
-          children: [
-            Text(context.tr('profile'), textAlign: TextAlign.center, style: TextStyles.bold22()),
-            SizedBox(height: 16.h),
-            Container(
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 32.r,
-                    backgroundColor: AppColors.primarySoft,
-                    child: Icon(Icons.person, color: AppColors.primary, size: 30.r),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(user?.displayName ?? context.tr('visitor'), style: TextStyles.bold18()),
-                  Text(user?.email ?? '', style: TextStyles.regular14(color: AppColors.textSecondary)),
-                ],
-              ),
+    final primaryGroup = isEngineer
+        ? <_MenuItem>[
+            _MenuItem(
+              title: context.tr('personal_profile'),
+              icon: SvgAssets.profile,
+              onTap: () => context.push(AppRoutes.personalProfile),
             ),
-            SizedBox(height: 12.h),
-            _Tile(
+          ]
+        : <_MenuItem>[
+            _MenuItem(
               title: context.tr('complete_profile_short'),
               icon: SvgAssets.profile,
               onTap: () => context.push(AppRoutes.completeProfile),
             ),
-            _Tile(
+            _MenuItem(
+              title: context.tr('manage_engineers'),
+              icon: SvgAssets.engineer,
+              onTap: () => context.push(AppRoutes.engineers),
+            ),
+            _MenuItem(
+              title: context.tr('subscriptions'),
+              icon: SvgAssets.company,
+              onTap: () => context.push(AppRoutes.subscriptions),
+            ),
+            _MenuItem(
               title: context.tr('templates'),
               icon: SvgAssets.templates,
               onTap: () => context.push(AppRoutes.templates),
             ),
-            _Tile(
-              title: context.tr('notifications'),
-              icon: SvgAssets.notification,
-              onTap: () => context.push(AppRoutes.notifications),
+            _MenuItem(
+              title: context.tr('manage_clients'),
+              icon: SvgAssets.profile,
+              onTap: () => context.push(AppRoutes.clients),
             ),
-            _Tile(
-              title: context.tr('terms'),
-              icon: SvgAssets.terms,
-              onTap: () => context.push(AppRoutes.terms),
+          ];
+
+    final secondaryGroup = <_MenuItem>[
+      _MenuItem(
+        title: context.tr('settings'),
+        icon: SvgAssets.settings,
+        onTap: () => context.push(AppRoutes.settings),
+      ),
+      _MenuItem(
+        title: context.tr('about_app'),
+        icon: SvgAssets.aboutApp,
+        onTap: () => context.push(AppRoutes.aboutApp),
+      ),
+      _MenuItem(
+        title: context.tr('faq'),
+        icon: SvgAssets.faq,
+        onTap: () => context.push(AppRoutes.faq),
+      ),
+      _MenuItem(
+        title: context.tr('terms'),
+        icon: SvgAssets.terms,
+        onTap: () => context.push(AppRoutes.terms),
+      ),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F9FC),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 20.h),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(18.r),
+              ),
             ),
-            _Tile(
-              title: '${context.tr('language')}: ${locale == 'ar' ? context.tr('arabic') : context.tr('english')}',
-              icon: SvgAssets.language,
-              onTap: () => context.read<LocaleCubit>().setLocale(locale == 'ar' ? 'en' : 'ar'),
+            child: SafeArea(
+              bottom: false,
+              child: SoftDrop(
+                child: Text(
+                  context.tr('profile'),
+                  textAlign: TextAlign.center,
+                  style: TextStyles.bold18(color: AppColors.white),
+                ),
+              ),
             ),
-            _Tile(
-              title: context.tr('logout'),
-              icon: SvgAssets.logout,
-              danger: true,
-              onTap: () async {
-                await context.read<SessionCubit>().logout();
-                if (context.mounted) context.go(AppRoutes.accountType);
-              },
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              children: [
+                SoftRise(
+                  delay: const Duration(milliseconds: 40),
+                  child: _MenuSection(items: primaryGroup),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 90),
+                  child: _MenuSection(items: secondaryGroup),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 140),
+                  child: _MenuSection(
+                    items: [
+                      _MenuItem(
+                        title: context.tr('logout'),
+                        icon: SvgAssets.logout,
+                        danger: true,
+                        onTap: () => _confirmLogout(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({
+class _MenuItem {
+  const _MenuItem({
     required this.title,
     required this.icon,
     required this.onTap,
@@ -102,43 +248,91 @@ class _Tile extends StatelessWidget {
   final String icon;
   final VoidCallback onTap;
   final bool danger;
+}
+
+class _MenuSection extends StatelessWidget {
+  const _MenuSection({required this.items});
+
+  final List<_MenuItem> items;
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.error : AppColors.text;
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: Material(
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return Container(
+      decoration: const BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.r),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14.r),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-            child: Row(
-              children: [
-                AppSvg(icon, size: 20.r, color: color),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.start,
-                    style: TextStyles.medium16(color: color),
-                  ),
-                ),
-                AppSvg(
-                  Directionality.of(context) == TextDirection.rtl
-                      ? SvgAssets.arrowBack
-                      : SvgAssets.arrowForward,
-                  size: 16.r,
-                  color: AppColors.hint,
-                ),
-              ],
-            ),
-          ),
-        ),
+        boxShadow: [
+          BoxShadow(color: Color(0x0A000000), blurRadius: 15),
+        ],
       ),
+          child: Column(
+            children: List.generate(items.length, (i) {
+              final item = items[i];
+              final color = item.danger
+                  ? const Color(0xFFFF3B30)
+                  : AppColors.text;
+              return SoftSlideStart(
+                delay: Duration(milliseconds: 50 + (i * 55)),
+                child: Column(
+                  children: [
+                    TapScale(
+                      child: InkWell(
+                        onTap: item.onTap,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 14.h,
+                          ),
+                          child: Row(
+                            children: [
+                              AppSvg(item.icon, size: 20.r, color: color),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: TextStyles.medium14(color: color),
+                                ),
+                              ),
+                              Container(
+                                width: 32.r,
+                                height: 32.r,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x0F000000),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: AppSvg(
+                                  rtl
+                                      ? SvgAssets.arrowBack
+                                      : SvgAssets.arrowForward,
+                                  size: 14.r,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (i < items.length - 1)
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        child: const Divider(
+                          height: 1,
+                          color: Color(0xFFF3F3F3),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ),
     );
   }
 }

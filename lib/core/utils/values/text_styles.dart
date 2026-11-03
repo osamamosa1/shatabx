@@ -81,6 +81,12 @@ abstract class TextStyles {
   static TextStyle regular12({Color? color}) =>
       style(size: 12, color: color, height: 1.45);
 
+  static TextStyle medium12({Color? color}) =>
+      style(size: 12, weight: FontWeight.w500, color: color, height: 1.4);
+
+  static TextStyle bold12({Color? color}) =>
+      style(size: 12, weight: FontWeight.w700, color: color, height: 1.4);
+
   static TextStyle regular14({Color? color}) =>
       style(size: 14, color: color, height: 1.55);
 
@@ -90,8 +96,14 @@ abstract class TextStyles {
   static TextStyle medium14({Color? color}) =>
       style(size: 14, weight: FontWeight.w600, color: color);
 
+  static TextStyle bold14({Color? color}) =>
+      style(size: 14, weight: FontWeight.w700, color: color, height: 1.35);
+
   static TextStyle medium16({Color? color}) =>
       style(size: 16, weight: FontWeight.w600, color: color);
+
+  static TextStyle bold16({Color? color}) =>
+      style(size: 16, weight: FontWeight.w700, color: color, height: 1.35);
 
   static TextStyle semiBold16({Color? color}) =>
       style(size: 16, weight: FontWeight.w600, color: color);

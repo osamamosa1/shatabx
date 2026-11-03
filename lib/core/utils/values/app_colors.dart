@@ -34,6 +34,18 @@ abstract class AppColors {
   static const Color heroMid = Color(0xFF1E3A5F);
   static const Color heroDeep = Color(0xFF0E2744);
   static const Color wash = Color(0xFFF4F9FC);
+  static const Color statusInfo = Color(0xFF1565C0);
+  static const Color statusInfoLight = Color(0xFFE3F2FD);
+  static const Color statusWarning = Color(0xFFE65100);
+  static const Color statusWarningLight = Color(0xFFFFF3E0);
+  static const Color statusSuccess = Color(0xFF2E7D32);
+  static const Color statusSuccessLight = Color(0xFFE8F5E9);
+  static const Color statusError = Color(0xFFC62828);
+  static const Color statusErrorLight = Color(0xFFFFEBEE);
+  static const Color proBannerDark = Color(0xFF0B1220);
+  static const Color progressBlue = Color(0xFF2563EB);
+  static const Color brand2 = Color(0xFFECEEED);
+  static const Color purpleLight = Color(0xFFEEE6F1);
 
   static const List<BoxShadow> cardShadow = [
     BoxShadow(

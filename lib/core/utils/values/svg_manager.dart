@@ -14,4 +14,15 @@ class SvgAssets {
   static const String language = 'assets/icons/language.svg';
   static const String logout = 'assets/icons/logout.svg';
   static const String terms = 'assets/icons/terms.svg';
+  static const String filter = 'assets/icons/filter.svg';
+  static const String search = 'assets/icons/search.svg';
+  static const String clock = 'assets/icons/clock.svg';
+  static const String chartSquare = 'assets/icons/chart_square.svg';
+  static const String buildingDone = 'assets/icons/building_done.svg';
+  static const String engineerStat = 'assets/icons/engineer_stat.svg';
+  static const String settings = 'assets/icons/settings.svg';
+  static const String aboutApp = 'assets/icons/about_app.svg';
+  static const String faq = 'assets/icons/faq.svg';
+  static const String xWatermark = 'assets/icons/x_watermark.svg';
+  static const String emptyProjectsWorker = 'assets/icons/empty_projects_worker.svg';
 }

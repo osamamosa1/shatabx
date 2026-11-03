@@ -11,7 +11,7 @@ class SplashCubit extends Cubit<SplashState> {
 
   Future<void> decide() async {
     emit(SplashLoading());
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
     final user = preferences.user;
     if (user != null) {
       emit(SplashGoHome(user));

@@ -9,6 +9,7 @@ import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
@@ -48,59 +49,84 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: const Color(0xFFFCFCFC),
         body: SafeArea(
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
               children: [
                 const AppBackButton(),
+                SizedBox(height: 24.h),
+                SoftDrop(
+                  child: Column(
+                    children: [
+                      Text(
+                        context.tr('reset_title'),
+                        textAlign: TextAlign.center,
+                        style: TextStyles.bold24(color: AppColors.text),
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        context.tr('reset_sub'),
+                        textAlign: TextAlign.center,
+                        style: TextStyles.regular14(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 SizedBox(height: 28.h),
-                Text(
-                  context.tr('reset_title'),
-                  textAlign: TextAlign.center,
-                  style: TextStyles.bold22(color: AppColors.text),
+                SoftRise(
+                  delay: const Duration(milliseconds: 50),
+                  child: Column(
+                    children: [
+                      MyTextFormField(
+                        controller: _password,
+                        label: context.tr('new_password'),
+                        hint: '••••••••',
+                        obscure: true,
+                        validator: (value) =>
+                            Validator.password(context, value),
+                      ),
+                      SizedBox(height: 14.h),
+                      MyTextFormField(
+                        controller: _confirm,
+                        label: context.tr('confirm_new_password'),
+                        hint: '••••••••',
+                        obscure: true,
+                        validator: (value) => Validator.confirmPassword(
+                          context,
+                          value,
+                          _password.text,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 8.h),
-                Text(
-                  context.tr('reset_sub'),
-                  textAlign: TextAlign.center,
-                  style: TextStyles.regular14(color: AppColors.textSecondary),
-                ),
-                SizedBox(height: 28.h),
-                MyTextFormField(
-                  controller: _password,
-                  label: context.tr('new_password'),
-                  hint: '••••••••',
-                  obscure: true,
-                  validator: (value) => Validator.password(context, value),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _confirm,
-                  label: context.tr('confirm_new_password'),
-                  hint: '••••••••',
-                  obscure: true,
-                  validator: (value) => Validator.confirmPassword(context, value, _password.text),
-                ),
-                SizedBox(height: 22.h),
-                BlocBuilder<ResetPasswordCubit, ResetPasswordState>(
-                  builder: (context, state) {
-                    return MyDefaultButton(
-                      text: context.tr('confirm'),
-                      isLoading: state is ResetPasswordLoading,
-                      onPressed: () {
-                        if (!_formKey.currentState!.validate()) return;
-                        context.read<ResetPasswordCubit>().submit(
-                          ResetPasswordParams(
-                            email: widget.email,
-                            password: _password.text,
-                          ),
-                        );
-                      },
-                    );
-                  },
+                SizedBox(height: 24.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 100),
+                  child: BlocBuilder<ResetPasswordCubit, ResetPasswordState>(
+                    builder: (context, state) {
+                      return MyDefaultButton(
+                        text: context.tr('confirm'),
+                        height: 48.h,
+                        borderRadius: 16.r,
+                        isLoading: state is ResetPasswordLoading,
+                        onPressed: () {
+                          if (!_formKey.currentState!.validate()) return;
+                          context.read<ResetPasswordCubit>().submit(
+                            ResetPasswordParams(
+                              email: widget.email,
+                              password: _password.text,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
