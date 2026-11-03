@@ -24,8 +24,10 @@ import '../../features/onboarding/presentation/cubit/splash_cubit.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_sub_screens.dart';
 import '../../features/projects/presentation/cubit/get_project_details_cubit.dart';
 import '../../features/projects/presentation/cubit/get_projects_cubit.dart';
+import '../../features/projects/presentation/screens/create_project_screen.dart';
 import '../../features/projects/presentation/screens/home_screen.dart';
 import '../../features/projects/presentation/screens/project_details_screen.dart';
 import '../../features/projects/presentation/screens/projects_screen.dart';
@@ -35,6 +37,7 @@ import '../../features/workspace/presentation/cubit/get_inspection_templates_cub
 import '../../features/workspace/presentation/cubit/get_notifications_cubit.dart';
 import '../../features/workspace/presentation/cubit/get_report_details_cubit.dart';
 import '../../features/workspace/presentation/cubit/get_reports_cubit.dart';
+import '../../features/workspace/presentation/screens/inspection_run_screen.dart';
 import '../../features/workspace/presentation/screens/inspection_template_details_screen.dart';
 import '../../features/workspace/presentation/screens/inspection_templates_screen.dart';
 import '../../features/workspace/presentation/screens/notifications_screen.dart';
@@ -56,8 +59,17 @@ abstract class AppRoutes {
   static const terms = '/terms';
   static const home = '/home';
   static const projects = '/projects';
+  static const createProject = '/create-project';
   static const reports = '/reports';
+  static const inspectionRun = '/inspection-run';
   static const profile = '/profile';
+  static const personalProfile = '/personal-profile';
+  static const engineers = '/engineers';
+  static const clients = '/clients';
+  static const subscriptions = '/subscriptions';
+  static const settings = '/settings';
+  static const aboutApp = '/about-app';
+  static const faq = '/faq';
   static const notifications = '/notifications';
   static const templates = '/templates';
 }
@@ -146,8 +158,12 @@ abstract class AppRouter {
             state,
             MultiBlocProvider(
               providers: [
-                BlocProvider(create: (_) => ServiceLocator.instance<VerifyOtpCubit>()),
-                BlocProvider(create: (_) => ServiceLocator.instance<ResendOtpCubit>()),
+                BlocProvider(
+                  create: (_) => ServiceLocator.instance<VerifyOtpCubit>(),
+                ),
+                BlocProvider(
+                  create: (_) => ServiceLocator.instance<ResendOtpCubit>(),
+                ),
               ],
               child: VerifyOtpScreen(args: args),
             ),
@@ -179,6 +195,55 @@ abstract class AppRouter {
         pageBuilder: (context, state) => fadePage(state, const TermsScreen()),
       ),
       GoRoute(
+        path: AppRoutes.createProject,
+        pageBuilder: (context, state) =>
+            fadePage(state, const CreateProjectScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.inspectionRun,
+        pageBuilder: (context, state) => fadePage(
+          state,
+          InspectionRunScreen(
+            projectName: state.uri.queryParameters['project'] ?? '',
+            phaseName: state.uri.queryParameters['phase'] ?? '',
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.personalProfile,
+        pageBuilder: (context, state) =>
+            fadePage(state, const PersonalProfileScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.engineers,
+        pageBuilder: (context, state) =>
+            fadePage(state, const EngineerManagementScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.clients,
+        pageBuilder: (context, state) =>
+            fadePage(state, const ClientManagementScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.subscriptions,
+        pageBuilder: (context, state) =>
+            fadePage(state, const SubscriptionsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        pageBuilder: (context, state) =>
+            fadePage(state, const SettingsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.aboutApp,
+        pageBuilder: (context, state) =>
+            fadePage(state, const AboutAppScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.faq,
+        pageBuilder: (context, state) => fadePage(state, const FaqScreen()),
+      ),
+      GoRoute(
         path: AppRoutes.notifications,
         pageBuilder: (context, state) => fadePage(
           state,
@@ -193,7 +258,8 @@ abstract class AppRouter {
         pageBuilder: (context, state) => fadePage(
           state,
           BlocProvider(
-            create: (_) => ServiceLocator.instance<GetInspectionTemplatesCubit>(),
+            create: (_) =>
+                ServiceLocator.instance<GetInspectionTemplatesCubit>(),
             child: const InspectionTemplatesScreen(),
           ),
         ),
@@ -203,8 +269,11 @@ abstract class AppRouter {
         pageBuilder: (context, state) => fadePage(
           state,
           BlocProvider(
-            create: (_) => ServiceLocator.instance<GetInspectionTemplateDetailsCubit>(),
-            child: InspectionTemplateDetailsScreen(id: state.pathParameters['id']!),
+            create: (_) =>
+                ServiceLocator.instance<GetInspectionTemplateDetailsCubit>(),
+            child: InspectionTemplateDetailsScreen(
+              id: state.pathParameters['id']!,
+            ),
           ),
         ),
       ),

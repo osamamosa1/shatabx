@@ -12,5 +12,18 @@ class ImgAssets {
   static const String saveProject = 'assets/images/save_project.png';
   static const String saveProjectAlt = 'assets/images/save_project_alt.png';
   static const String loginEngineer = 'assets/images/login_engineer.png';
+  static const String loginCompanyHero = 'assets/images/login_company_hero.png';
   static const String emptyNotifications = 'assets/images/empty_notifications.png';
+  static const String accountCompany = 'assets/images/account_company.png';
+  static const String accountEngineer = 'assets/images/account_engineer.png';
+  static const String joinBg = 'assets/images/join_bg.png';
+  static const String joinNewCompany = 'assets/images/join_new_company.png';
+  static const String joinRegisteredCompany = 'assets/images/join_registered_company.png';
+  static const String companyAvatar = 'assets/images/company_avatar.png';
+  static const String companyBanner = 'assets/images/company_banner.png';
+  static const String companySetupLogo = 'assets/images/company_setup_logo.png';
+  static const String engineerAvatar = 'assets/images/engineer_avatar.png';
+  static const String projectThumb2 = 'assets/images/project_thumb_2.png';
+  static const String projectThumb3 = 'assets/images/project_thumb_3.png';
+  static const String projectThumb4 = 'assets/images/project_thumb_4.png';
 }

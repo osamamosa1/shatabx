@@ -9,14 +9,25 @@ CustomTransitionPage<void> fadePage(GoRouterState state, Widget child) {
     key: state.pageKey,
     transitionDuration: AppMotion.enter,
     reverseTransitionDuration: AppMotion.exit,
-    child: FadeIn(
+    child: FadeInUp(
       duration: AppMotion.enter,
+      from: 14,
       curve: AppMotion.curve,
       child: child,
     ),
     transitionsBuilder: (context, animation, secondaryAnimation, pageChild) {
-      if (animation.status != AnimationStatus.reverse) return pageChild;
-      return FadeTransition(opacity: animation, child: pageChild);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppMotion.curve,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.985, end: 1.0).animate(curved),
+          child: pageChild,
+        ),
+      );
     },
   );
 }

@@ -14,7 +14,7 @@ Future<void> main() async {
   await AppLocalizations.ensureLoaded();
   await GoogleFonts.pendingFonts([
     GoogleFonts.cairo(),
-    GoogleFonts.dmSans(),
+    GoogleFonts.dmSans(), 
     GoogleFonts.poppins(),
     GoogleFonts.montserrat(),
   ]);

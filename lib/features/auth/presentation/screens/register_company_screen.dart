@@ -9,6 +9,7 @@ import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
+import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
@@ -29,8 +30,8 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
   final _owner = TextEditingController(text: 'عبدالله الحربي');
   final _phone = TextEditingController(text: '10102548963');
   final _email = TextEditingController(text: 'company@example.com');
-  final _password = TextEditingController();
-  final _confirm = TextEditingController();
+  final _password = TextEditingController(text: '123456');
+  final _confirm = TextEditingController(text: '123456');
   bool _accepted = true;
   bool _seeded = false;
 
@@ -92,104 +93,157 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: const Color(0xFFFCFCFC),
         body: SafeArea(
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
               children: [
                 const AppBackButton(),
-                SizedBox(height: 12.h),
-                Text(
-                  context.tr('create_company'),
-                  textAlign: TextAlign.center,
-                  style: TextStyles.bold22(color: AppColors.text),
+                SizedBox(height: 16.h),
+                SoftDrop(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.tr('create_company'),
+                        textAlign: TextAlign.start,
+                        style: TextStyles.bold24(color: AppColors.text),
+                      ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        context.tr('create_company_sub'),
+                        textAlign: TextAlign.start,
+                        style: TextStyles.regular14(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 6.h),
-                Text(
-                  context.tr('create_company_sub'),
-                  textAlign: TextAlign.center,
-                  style: TextStyles.regular14(color: AppColors.textSecondary),
+                SizedBox(height: 20.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 60),
+                  child: MyTextFormField(
+                    controller: _company,
+                    label: context.tr('company_name'),
+                    hint: context.tr('company_name_hint'),
+                    validator: (v) => Validator.requiredField(
+                      context,
+                      v,
+                      label: context.tr('company_name'),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 110),
+                  child: MyTextFormField(
+                    controller: _owner,
+                    label: context.tr('owner_name'),
+                    hint: context.tr('owner_name_hint'),
+                    validator: (v) => Validator.requiredField(
+                      context,
+                      v,
+                      label: context.tr('owner_label'),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 160),
+                  child: MyTextFormField(
+                    controller: _phone,
+                    label: context.tr('phone'),
+                    hint: '10102548963',
+                    keyboardType: TextInputType.phone,
+                    prefix: const _DialCode(),
+                    validator: (v) => Validator.phone(context, v),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 210),
+                  child: MyTextFormField(
+                    controller: _email,
+                    label: context.tr('email'),
+                    hint: 'company@example.com',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => Validator.email(context, v),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 260),
+                  child: MyTextFormField(
+                    controller: _password,
+                    label: context.tr('password'),
+                    hint: '••••••••',
+                    obscure: true,
+                    validator: (v) => Validator.password(context, v),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 310),
+                  child: MyTextFormField(
+                    controller: _confirm,
+                    label: context.tr('confirm_password'),
+                    hint: '••••••••',
+                    obscure: true,
+                    validator: (v) => Validator.confirmPassword(
+                      context,
+                      v,
+                      _password.text,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                SoftRise(
+                  delay: const Duration(milliseconds: 90),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 22.r,
+                        height: 22.r,
+                        child: Checkbox(
+                          value: _accepted,
+                          activeColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          onChanged: (value) =>
+                              setState(() => _accepted = value ?? false),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      GestureDetector(
+                        onTap: () => context.push(AppRoutes.terms),
+                        child: Text(
+                          context.tr('accept_terms'),
+                          style: TextStyles.medium12(
+                            color: AppColors.primary,
+                          ).copyWith(decoration: TextDecoration.underline),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 22.h),
-                MyTextFormField(
-                  controller: _company,
-                  label: context.tr('company_name'),
-                  hint: context.tr('company_name_hint'),
-                  validator: (v) => Validator.requiredField(context, v, label: context.tr('company_name')),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _owner,
-                  label: context.tr('owner_name'),
-                  hint: context.tr('owner_name_hint'),
-                  validator: (v) => Validator.requiredField(context, v, label: context.tr('owner_label')),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _phone,
-                  label: context.tr('phone'),
-                  hint: '10102548963',
-                  keyboardType: TextInputType.phone,
-                  prefix: const _DialCode(),
-                  validator: (v) => Validator.phone(context, v),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _email,
-                  label: context.tr('email'),
-                  hint: 'company@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) => Validator.email(context, v),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _password,
-                  label: context.tr('password'),
-                  hint: '••••••••',
-                  obscure: true,
-                  validator: (v) => Validator.password(context, v),
-                ),
-                SizedBox(height: 14.h),
-                MyTextFormField(
-                  controller: _confirm,
-                  label: context.tr('confirm_password'),
-                  hint: '••••••••',
-                  obscure: true,
-                  validator: (v) => Validator.confirmPassword(context, v, _password.text),
-                ),
-                SizedBox(height: 12.h),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 22.r,
-                      height: 22.r,
-                      child: Checkbox(
-                        value: _accepted,
-                        activeColor: AppColors.primary,
-                        onChanged: (value) => setState(() => _accepted = value ?? false),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    GestureDetector(
-                      onTap: () => context.push(AppRoutes.terms),
-                      child: Text(
-                        context.tr('accept_terms'),
-                        style: TextStyles.medium14(color: AppColors.primary),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 18.h),
-                BlocBuilder<RegisterCompanyCubit, RegisterCompanyState>(
-                  builder: (context, state) {
-                    return MyDefaultButton(
-                      text: context.tr('create_account'),
-                      isLoading: state is RegisterCompanyLoading,
-                      onPressed: _submit,
-                    );
-                  },
+                SoftRise(
+                  delay: const Duration(milliseconds: 120),
+                  child: BlocBuilder<RegisterCompanyCubit, RegisterCompanyState>(
+                    builder: (context, state) {
+                      return MyDefaultButton(
+                        text: context.tr('create_account'),
+                        height: 48.h,
+                        borderRadius: 16.r,
+                        isLoading: state is RegisterCompanyLoading,
+                        onPressed: _submit,
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -206,14 +260,24 @@ class _DialCode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsetsDirectional.only(start: 12.w),
+      padding: EdgeInsetsDirectional.only(start: 12.w, end: 8.w),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('🇪🇬', style: TextStyle(fontSize: 16.sp)),
           SizedBox(width: 4.w),
-          Text('+20', style: TextStyles.medium14(color: AppColors.text)),
-          Icon(Icons.keyboard_arrow_down_rounded, size: 18.r, color: AppColors.hint),
+          Text('+020', style: TextStyles.medium14(color: AppColors.text)),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 16.r,
+            color: AppColors.hint,
+          ),
+          SizedBox(width: 6.w),
+          Container(
+            width: 1,
+            height: 16.h,
+            color: AppColors.border,
+          ),
         ],
       ),
     );
