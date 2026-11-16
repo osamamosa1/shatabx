@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/locale/app_localizations.dart';
+import '../utils/error_message.dart';
 import '../utils/values/app_colors.dart';
 import '../utils/values/text_styles.dart';
 import 'my_default_button.dart';
@@ -20,7 +21,7 @@ class ErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              context.tr(message),
+              resolveErrorMessage(context, message),
               textAlign: TextAlign.center,
               style: TextStyles.regular16(color: AppColors.text),
             ),

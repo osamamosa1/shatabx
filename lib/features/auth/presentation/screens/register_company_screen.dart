@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/text_styles.dart';
@@ -13,6 +14,8 @@ import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
+import '../../../../injection_container.dart';
+import '../../../content/data/datasources/content_remote_data_source.dart';
 import '../../domain/params/auth_params.dart';
 import '../cubit/register_company_cubit.dart';
 import '../models/auth_flow_args.dart';
@@ -34,6 +37,33 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
   final _confirm = TextEditingController(text: '123456');
   bool _accepted = true;
   bool _seeded = false;
+  int _packageId = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveFreePackage();
+  }
+
+  Future<void> _resolveFreePackage() async {
+    try {
+      final packages =
+          await ServiceLocator.instance<ContentRemoteDataSource>().getPackages();
+      for (final p in packages) {
+        final type = p['type']?.toString().toLowerCase() ?? '';
+        final payment = p['payment_type']?.toString().toLowerCase() ?? '';
+        final price = num.tryParse(p['price']?.toString() ?? '') ?? -1;
+        if (type == 'company' && (payment == 'free' || price == 0)) {
+          final id = int.tryParse(p['id']?.toString() ?? '');
+          if (id != null) {
+            if (!mounted) return;
+            setState(() => _packageId = id);
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   void didChangeDependencies() {
@@ -71,6 +101,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
         email: _email.text,
         password: _password.text,
         acceptedTerms: _accepted,
+        packageId: _packageId,
       ),
     );
   }
@@ -80,7 +111,11 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
     return BlocListener<RegisterCompanyCubit, RegisterCompanyState>(
       listener: (context, state) {
         if (state is RegisterCompanyError) {
-          AppSnackBar.show(context, context.tr(state.message), error: true);
+          AppSnackBar.show(
+            context,
+            resolveErrorMessage(context, state.message),
+            error: true,
+          );
         } else if (state is RegisterCompanySuccess) {
           context.push(
             AppRoutes.otp,

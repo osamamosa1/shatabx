@@ -12,8 +12,9 @@ import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
-import '../../data/repositories/workspace_repository_impl.dart';
+import '../../../../injection_container.dart';
 import '../../domain/entities/workspace_entities.dart';
+import '../../domain/repositories/workspace_repository.dart';
 import '../cubit/get_notifications_cubit.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -107,9 +108,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           const Spacer(),
                           TextButton(
-                            onPressed: () {
-                              WorkspaceRepositoryImpl.clearNotifications();
-                              context.read<GetNotificationsCubit>().load();
+                            onPressed: () async {
+                              await ServiceLocator.instance<WorkspaceRepository>()
+                                  .clearNotifications();
+                              if (context.mounted) {
+                                context.read<GetNotificationsCubit>().load();
+                              }
                             },
                             child: Text(
                               context.tr('delete_all'),
@@ -164,12 +168,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       ),
                                     ),
                                     InkWell(
-                                      onTap: () {
-                                        WorkspaceRepositoryImpl
-                                            .removeNotification(item.id);
-                                        context
-                                            .read<GetNotificationsCubit>()
-                                            .load();
+                                      onTap: () async {
+                                        await ServiceLocator.instance<
+                                                WorkspaceRepository>()
+                                            .markNotificationRead(item.id);
+                                        if (context.mounted) {
+                                          context
+                                              .read<GetNotificationsCubit>()
+                                              .load();
+                                        }
                                       },
                                       child: Icon(
                                         Icons.delete_outline_rounded,

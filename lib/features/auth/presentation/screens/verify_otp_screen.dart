@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
@@ -29,11 +30,8 @@ class VerifyOtpScreen extends StatefulWidget {
 }
 
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
-  final _controllers = List.generate(
-    4,
-    (_) => TextEditingController(text: '5'),
-  );
-  final _nodes = List.generate(4, (_) => FocusNode());
+  final _controllers = List.generate(6, (_) => TextEditingController());
+  final _nodes = List.generate(6, (_) => FocusNode());
 
   @override
   void initState() {
@@ -61,7 +59,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         BlocListener<VerifyOtpCubit, VerifyOtpState>(
           listener: (context, state) {
             if (state is VerifyOtpError) {
-              AppSnackBar.show(context, context.tr(state.message), error: true);
+              AppSnackBar.show(
+                context,
+                resolveErrorMessage(context, state.message),
+                error: true,
+              );
             } else if (state is VerifyOtpSuccess) {
               final user = widget.args.pendingUser;
               if (widget.args.purpose == OtpPurpose.register &&
@@ -78,10 +80,17 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         BlocListener<ResendOtpCubit, ResendOtpState>(
           listener: (context, state) {
             if (state is ResendOtpSuccess) {
-              AppSnackBar.show(context, context.tr(state.message));
+              AppSnackBar.show(
+                context,
+                resolveErrorMessage(context, state.message),
+              );
               context.read<VerifyOtpCubit>().startTimer();
             } else if (state is ResendOtpError) {
-              AppSnackBar.show(context, context.tr(state.message), error: true);
+              AppSnackBar.show(
+                context,
+                resolveErrorMessage(context, state.message),
+                error: true,
+              );
             }
           },
         ),
@@ -247,7 +256,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                         borderRadius: 16.r,
                         isLoading: state is VerifyOtpLoading,
                         onPressed: () {
-                          if (_code.length < 4) {
+                          if (_code.length < 6) {
                             AppSnackBar.show(
                               context,
                               context.tr('otp_incomplete'),

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api/dio_consumer.dart';
 import 'core/services/local_storage/app_shared_preferences.dart';
+import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/auth_use_cases.dart';
@@ -16,15 +17,18 @@ import 'features/auth/presentation/cubit/select_account_type_cubit.dart';
 import 'features/auth/presentation/cubit/select_join_method_cubit.dart';
 import 'features/auth/presentation/cubit/session_cubit.dart';
 import 'features/auth/presentation/cubit/verify_otp_cubit.dart';
+import 'features/content/data/datasources/content_remote_data_source.dart';
 import 'features/language/presentation/cubit/locale_cubit.dart';
 import 'features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'features/onboarding/presentation/cubit/splash_cubit.dart';
+import 'features/projects/data/datasources/projects_remote_data_source.dart';
 import 'features/projects/data/repositories/projects_repository_impl.dart';
 import 'features/projects/domain/repositories/projects_repository.dart';
 import 'features/projects/domain/usecases/project_use_cases.dart';
 import 'features/projects/presentation/cubit/get_project_details_cubit.dart';
 import 'features/projects/presentation/cubit/get_projects_cubit.dart';
 import 'features/shell/presentation/cubit/bottom_nav_cubit.dart';
+import 'features/workspace/data/datasources/workspace_remote_data_source.dart';
 import 'features/workspace/data/repositories/workspace_repository_impl.dart';
 import 'features/workspace/domain/repositories/workspace_repository.dart';
 import 'features/workspace/domain/usecases/workspace_use_cases.dart';
@@ -39,15 +43,37 @@ abstract class ServiceLocator {
 
   static Future<void> init() async {
     final preferences = await SharedPreferences.getInstance();
-    instance.registerLazySingleton<AppSharedPreferences>(
-      () => AppSharedPreferencesImpl(preferences),
-    );
+    final appPrefs = AppSharedPreferencesImpl(preferences);
+
+    instance.registerLazySingleton<AppSharedPreferences>(() => appPrefs);
+    instance.registerLazySingleton<Dio>(() => Dio());
     instance.registerLazySingleton<DioConsumer>(
-      () => DioConsumerImpl(client: Dio()),
+      () => DioConsumerImpl(
+        client: instance(),
+        preferences: instance(),
+        onUnauthorized: () {
+          if (instance.isRegistered<SessionCubit>()) {
+            instance<SessionCubit>().forceLocalLogout();
+          }
+        },
+      ),
+    );
+
+    instance.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(instance()),
+    );
+    instance.registerLazySingleton<ProjectsRemoteDataSource>(
+      () => ProjectsRemoteDataSourceImpl(instance()),
+    );
+    instance.registerLazySingleton<ContentRemoteDataSource>(
+      () => ContentRemoteDataSourceImpl(instance()),
+    );
+    instance.registerLazySingleton<WorkspaceRemoteDataSource>(
+      () => WorkspaceRemoteDataSourceImpl(instance()),
     );
 
     instance.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(instance<AppSharedPreferences>()),
+      () => AuthRepositoryImpl(instance(), instance()),
     );
     instance.registerLazySingleton(() => RegisterCompanyUseCase(instance()));
     instance.registerLazySingleton(() => LoginUseCase(instance()));
@@ -55,19 +81,32 @@ abstract class ServiceLocator {
     instance.registerLazySingleton(() => ResendOtpUseCase(instance()));
     instance.registerLazySingleton(() => ResetPasswordUseCase(instance()));
     instance.registerLazySingleton(() => CompleteProfileUseCase(instance()));
+    instance.registerLazySingleton(() => GetProfileUseCase(instance()));
+    instance.registerLazySingleton(() => LogoutUseCase(instance()));
 
-    instance.registerLazySingleton<ProjectsRepository>(ProjectsRepositoryImpl.new);
+    instance.registerLazySingleton<ProjectsRepository>(
+      () => ProjectsRepositoryImpl(instance()),
+    );
     instance.registerLazySingleton(() => GetProjectsUseCase(instance()));
     instance.registerLazySingleton(() => GetProjectDetailsUseCase(instance()));
+    instance.registerLazySingleton(() => CreateProjectUseCase(instance()));
 
-    instance.registerLazySingleton<WorkspaceRepository>(WorkspaceRepositoryImpl.new);
+    instance.registerLazySingleton<WorkspaceRepository>(
+      () => WorkspaceRepositoryImpl(instance(), instance()),
+    );
     instance.registerLazySingleton(() => GetNotificationsUseCase(instance()));
     instance.registerLazySingleton(() => GetReportsUseCase(instance()));
     instance.registerLazySingleton(() => GetReportDetailsUseCase(instance()));
-    instance.registerLazySingleton(() => GetInspectionTemplatesUseCase(instance()));
-    instance.registerLazySingleton(() => GetInspectionTemplateDetailsUseCase(instance()));
+    instance.registerLazySingleton(
+      () => GetInspectionTemplatesUseCase(instance()),
+    );
+    instance.registerLazySingleton(
+      () => GetInspectionTemplateDetailsUseCase(instance()),
+    );
 
-    instance.registerLazySingleton(() => SessionCubit(instance()));
+    instance.registerLazySingleton(
+      () => SessionCubit(instance(), instance()),
+    );
     instance.registerLazySingleton(() => LocaleCubit(instance()));
     instance.registerLazySingleton(BottomNavCubit.new);
 
@@ -87,7 +126,9 @@ abstract class ServiceLocator {
     instance.registerFactory(() => GetReportsCubit(instance()));
     instance.registerFactory(() => GetReportDetailsCubit(instance()));
     instance.registerFactory(() => GetInspectionTemplatesCubit(instance()));
-    instance.registerFactory(() => GetInspectionTemplateDetailsCubit(instance()));
+    instance.registerFactory(
+      () => GetInspectionTemplateDetailsCubit(instance()),
+    );
   }
 }
 

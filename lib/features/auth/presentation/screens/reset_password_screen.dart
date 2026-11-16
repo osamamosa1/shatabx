@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/text_styles.dart';
@@ -42,9 +43,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return BlocListener<ResetPasswordCubit, ResetPasswordState>(
       listener: (context, state) {
         if (state is ResetPasswordError) {
-          AppSnackBar.show(context, context.tr(state.message), error: true);
+          AppSnackBar.show(
+            context,
+            resolveErrorMessage(context, state.message),
+            error: true,
+          );
         } else if (state is ResetPasswordSuccess) {
-          AppSnackBar.show(context, context.tr(state.message));
+          AppSnackBar.show(
+            context,
+            resolveErrorMessage(context, state.message),
+          );
           context.go(AppRoutes.accountType);
         }
       },

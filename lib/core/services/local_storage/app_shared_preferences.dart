@@ -12,8 +12,14 @@ abstract class AppSharedPreferences {
   Future<void> saveUser(UserEntity user);
   Future<void> clearUser();
 
+  String? get token;
+  Future<void> saveToken(String token);
+  Future<void> clearToken();
+
   String get languageCode;
   Future<void> saveLanguageCode(String code);
+
+  Future<void> clearSession();
 }
 
 class AppSharedPreferencesImpl implements AppSharedPreferences {
@@ -23,6 +29,7 @@ class AppSharedPreferencesImpl implements AppSharedPreferences {
 
   static const _onboarding = 'onboarding_seen';
   static const _user = 'user';
+  static const _token = 'access_token';
   static const _language = 'language_code';
 
   @override
@@ -47,9 +54,23 @@ class AppSharedPreferencesImpl implements AppSharedPreferences {
   Future<void> clearUser() => instance.remove(_user);
 
   @override
+  String? get token => instance.getString(_token);
+
+  @override
+  Future<void> saveToken(String token) => instance.setString(_token, token);
+
+  @override
+  Future<void> clearToken() => instance.remove(_token);
+
+  @override
   String get languageCode => instance.getString(_language) ?? 'ar';
 
   @override
   Future<void> saveLanguageCode(String code) =>
       instance.setString(_language, code);
+
+  @override
+  Future<void> clearSession() async {
+    await Future.wait([clearUser(), clearToken()]);
+  }
 }

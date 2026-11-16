@@ -13,9 +13,13 @@ class SplashCubit extends Cubit<SplashState> {
     emit(SplashLoading());
     await Future<void>.delayed(const Duration(milliseconds: 1100));
     final user = preferences.user;
-    if (user != null) {
+    final token = preferences.token;
+    if (user != null && token != null && token.isNotEmpty) {
       emit(SplashGoHome(user));
       return;
+    }
+    if (user != null && (token == null || token.isEmpty)) {
+      await preferences.clearSession();
     }
     if (preferences.onboardingSeen) {
       emit(SplashGoAccountType());

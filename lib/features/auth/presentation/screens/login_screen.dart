@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/assets.dart';
@@ -35,14 +36,48 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController(text: 'company@example.com');
-  final _password = TextEditingController(text: '123456');
+  final _username = TextEditingController();
+  final _password = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
+    _username.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _forgotPassword() async {
+    final emailController = TextEditingController();
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(context.tr('forgot_password')),
+          content: MyTextFormField(
+            controller: emailController,
+            label: context.tr('email'),
+            hint: 'name@example.com',
+            keyboardType: TextInputType.emailAddress,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('skip')),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, emailController.text.trim()),
+              child: Text(context.tr('confirm')),
+            ),
+          ],
+        );
+      },
+    );
+    emailController.dispose();
+    if (!mounted || email == null || email.isEmpty) return;
+    context.push(
+      '${AppRoutes.otp}?purpose=reset&email=${Uri.encodeComponent(email)}&role=${widget.role.name}',
+    );
   }
 
   bool get _engineer => widget.role == AccountRole.engineer;
@@ -55,7 +90,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<LoginCubit, LoginState>(
       listener: (context, state) {
         if (state is LoginError) {
-          AppSnackBar.show(context, context.tr(state.message), error: true);
+          AppSnackBar.show(
+            context,
+            resolveErrorMessage(context, state.message),
+            error: true,
+          );
         } else if (state is LoginSuccess) {
           context.read<SessionCubit>().setUser(state.user);
           context.go(AppRoutes.home);
@@ -299,12 +338,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SoftRise(
                                     delay: const Duration(milliseconds: 170),
                                     child: MyTextFormField(
-                                      controller: _email,
-                                      label: context.tr('email'),
-                                      hint: 'company@example.com',
-                                      keyboardType: TextInputType.emailAddress,
+                                      controller: _username,
+                                      label: context.tr('username'),
+                                      hint: context.tr('username_hint'),
+                                      keyboardType: TextInputType.text,
                                       validator: (value) =>
-                                          Validator.email(context, value),
+                                          Validator.requiredField(
+                                        context,
+                                        value,
+                                        label: context.tr('username'),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(height: 16.h),
@@ -324,9 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: Align(
                                       alignment: AlignmentDirectional.centerEnd,
                                       child: TextButton(
-                                        onPressed: () => context.push(
-                                          '${AppRoutes.otp}?purpose=reset&email=${Uri.encodeComponent(_email.text.trim())}&role=${widget.role.name}',
-                                        ),
+                                        onPressed: _forgotPassword,
                                         child: Text(
                                           context.tr('forgot_password'),
                                           style: TextStyles.medium12(
@@ -353,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             }
                                             context.read<LoginCubit>().login(
                                               LoginParams(
-                                                email: _email.text,
+                                                username: _username.text,
                                                 password: _password.text,
                                                 role: widget.role,
                                               ),

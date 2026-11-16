@@ -73,3 +73,25 @@ class CompleteProfileUseCase
     return repository.completeProfile(params);
   }
 }
+
+class GetProfileUseCase extends UseCase<UserEntity, NoParams> {
+  GetProfileUseCase(this.repository);
+
+  final AuthRepository repository;
+
+  @override
+  Future<Either<Failure, UserEntity>> call(NoParams params) {
+    return repository.getProfile();
+  }
+}
+
+class LogoutUseCase extends UseCase<Unit, NoParams> {
+  LogoutUseCase(this.repository);
+
+  final AuthRepository repository;
+
+  @override
+  Future<Either<Failure, Unit>> call(NoParams params) {
+    return repository.logout();
+  }
+}

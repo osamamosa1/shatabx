@@ -15,8 +15,9 @@ import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/my_default_button.dart';
-import '../../data/repositories/workspace_repository_impl.dart';
+import '../../../../injection_container.dart';
 import '../../domain/entities/workspace_entities.dart';
+import '../../domain/repositories/workspace_repository.dart';
 import '../cubit/get_inspection_templates_cubit.dart';
 
 class InspectionTemplatesScreen extends StatefulWidget {
@@ -87,41 +88,17 @@ class _InspectionTemplatesScreenState extends State<InspectionTemplatesScreen> {
               SizedBox(height: 16.h),
               MyDefaultButton(
                 text: context.tr('save_data'),
-                onPressed: () {
+                onPressed: () async {
                   final title = nameController.text.trim();
                   if (title.isEmpty) return;
-                  WorkspaceRepositoryImpl.addTemplate(
-                    InspectionTemplateEntity(
-                      id: 't${DateTime.now().millisecondsSinceEpoch}',
-                      name: L10n(title, title),
-                      itemsCount: 10,
-                      phasesCount: 4,
-                      inspectionsCount: 6,
-                      category: L10n(
-                        categoryController.text.trim().isEmpty
-                            ? 'تشطيبات'
-                            : categoryController.text.trim(),
-                        categoryController.text.trim().isEmpty
-                            ? 'Finishes'
-                            : categoryController.text.trim(),
-                      ),
-                      dateLabel: const L10n(
-                        'تاريخ الإنشاء: اليوم',
-                        'Created: Today',
-                      ),
-                      items: const [
-                        L10n(
-                          'مطابقة الأعمال للمخططات المعتمدة',
-                          'Works match approved blueprints',
-                        ),
-                        L10n(
-                          'فحص جودة التنفيذ والخامات',
-                          'Execution & material quality check',
-                        ),
-                      ],
-                    ),
-                  );
+                  final category = categoryController.text.trim().isEmpty
+                      ? 'apartment'
+                      : categoryController.text.trim();
+                  await ServiceLocator.instance<WorkspaceRepository>()
+                      .createTemplate(name: title, category: category);
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx);
+                  if (!context.mounted) return;
                   context.read<GetInspectionTemplatesCubit>().load();
                   AppSnackBar.show(context, context.tr('save_data'));
                 },

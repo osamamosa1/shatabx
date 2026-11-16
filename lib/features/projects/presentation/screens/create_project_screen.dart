@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/validator.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/assets.dart';
@@ -13,8 +14,10 @@ import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
-import '../../data/repositories/projects_repository_impl.dart';
-import '../../domain/entities/project_entity.dart';
+import '../../../../injection_container.dart';
+import '../../../content/data/datasources/content_remote_data_source.dart';
+import '../../domain/params/create_project_params.dart';
+import '../../domain/usecases/project_use_cases.dart';
 
 class CreateProjectScreen extends StatefulWidget {
   const CreateProjectScreen({super.key});
@@ -26,52 +29,170 @@ class CreateProjectScreen extends StatefulWidget {
 class _CreateProjectScreenState extends State<CreateProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _client = TextEditingController();
-  final _location = TextEditingController(text: 'الرياض - حي النرجس');
-  final _engineer = TextEditingController(text: 'م. خالد العتيبي');
-  final _area = TextEditingController(text: '250 م²');
-  final _startDate = TextEditingController(text: '10-11-2026');
-  final _endDate = TextEditingController(text: '10-05-2027');
+  final _location = TextEditingController();
+  final _area = TextEditingController();
+  final _startDate = TextEditingController();
+  final _endDate = TextEditingController();
+
+  List<Map<String, dynamic>> _customers = const [];
+  List<Map<String, dynamic>> _engineers = const [];
+  String? _customerId;
+  String? _engineerId;
+  bool _loadingLookups = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLookups();
+  }
+
+  Future<void> _loadLookups() async {
+    try {
+      final content = ServiceLocator.instance<ContentRemoteDataSource>();
+      final results = await Future.wait([
+        content.getCustomers(),
+        content.getEngineers(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _customers = results[0];
+        _engineers = results[1];
+        _customerId = _customers.isNotEmpty
+            ? _customers.first['id']?.toString()
+            : null;
+        _engineerId = _engineers.isNotEmpty
+            ? _engineers.first['id']?.toString()
+            : null;
+        _loadingLookups = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingLookups = false);
+    }
+  }
+
+  String _labelOf(Map<String, dynamic> item) {
+    final name = item['name']?.toString().trim() ?? '';
+    if (name.isNotEmpty) return name;
+    final phone = item['phone']?.toString().trim() ?? '';
+    if (phone.isNotEmpty) return phone;
+    return item['id']?.toString() ?? '';
+  }
 
   @override
   void dispose() {
     _name.dispose();
-    _client.dispose();
     _location.dispose();
-    _engineer.dispose();
     _area.dispose();
     _startDate.dispose();
     _endDate.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final title = _name.text.trim();
-    final loc = _location.text.trim();
-    final eng = _engineer.text.trim();
+    if (_customerId == null) {
+      AppSnackBar.show(
+        context,
+        context.isArabic ? 'اختر عميلاً أولاً' : 'Select a client first',
+        error: true,
+      );
+      return;
+    }
+    setState(() => _saving = true);
 
-    ProjectsRepositoryImpl.addProject(
-      ProjectEntity(
-        id: 'p${DateTime.now().millisecondsSinceEpoch}',
-        name: L10n(title, title),
-        location: L10n(loc, loc),
-        progress: 0.05,
-        status: ProjectStatus.started,
-        phase: const L10n('الأعمال التحضيرية', 'Preparatory works'),
-        engineer: L10n(eng, eng),
-        imageAsset: ImgAssets.saveProject,
-        lastUpdated: const L10n('الآن', 'Just now'),
-        clientName: L10n(_client.text.trim(), _client.text.trim()),
-        startDate: _startDate.text.trim(),
-        endDate: _endDate.text.trim(),
-        unitArea: L10n(_area.text.trim(), _area.text.trim()),
-        phases: ProjectsRepositoryImpl.items.first.phases,
+    String clientName = '';
+    for (final c in _customers) {
+      if (c['id']?.toString() == _customerId) {
+        clientName = _labelOf(c);
+        break;
+      }
+    }
+    String engineerName = '';
+    for (final e in _engineers) {
+      if (e['id']?.toString() == _engineerId) {
+        engineerName = _labelOf(e);
+        break;
+      }
+    }
+
+    final result = await ServiceLocator.instance<CreateProjectUseCase>()(
+      CreateProjectParams(
+        name: _name.text.trim(),
+        clientName: clientName,
+        location: _location.text.trim(),
+        engineerName: engineerName,
+        area: _area.text.trim(),
+        startDate: _startDate.text.trim().isEmpty
+            ? null
+            : _startDate.text.trim(),
+        endDate: _endDate.text.trim().isEmpty ? null : _endDate.text.trim(),
+        customerId: _customerId,
+        engineerId: _engineerId,
       ),
     );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    result.fold(
+      (failure) {
+        AppSnackBar.show(
+          context,
+          resolveErrorMessage(context, failure.message),
+          error: true,
+        );
+      },
+      (_) {
+        AppSnackBar.show(context, context.tr('project_created'));
+        context.pop(true);
+      },
+    );
+  }
 
-    AppSnackBar.show(context, context.tr('project_created'));
-    context.pop();
+  Widget _dropdown({
+    required String label,
+    required String? value,
+    required List<Map<String, dynamic>> items,
+    required ValueChanged<String?> onChanged,
+    required String emptyHint,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: TextStyles.bold12(color: AppColors.text)),
+        SizedBox(height: 6.h),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: value,
+              hint: Text(
+                emptyHint,
+                style: TextStyles.regular12(color: AppColors.textSecondary),
+              ),
+              items: items
+                  .map(
+                    (item) => DropdownMenuItem<String>(
+                      value: item['id']?.toString(),
+                      child: Text(
+                        _labelOf(item),
+                        style: TextStyles.regular14(color: AppColors.text),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -190,16 +311,32 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                           ),
                         ),
                         SizedBox(height: 12.h),
-                        MyTextFormField(
-                          controller: _client,
-                          label: context.tr('client_name'),
-                          hint: context.tr('client_name_hint'),
-                          validator: (v) => Validator.requiredField(
-                            context,
-                            v,
+                        if (_loadingLookups)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else ...[
+                          _dropdown(
                             label: context.tr('client_name'),
+                            value: _customerId,
+                            items: _customers,
+                            emptyHint: context.isArabic
+                                ? 'لا يوجد عملاء'
+                                : 'No clients',
+                            onChanged: (v) => setState(() => _customerId = v),
                           ),
-                        ),
+                          SizedBox(height: 12.h),
+                          _dropdown(
+                            label: context.tr('engineer'),
+                            value: _engineerId,
+                            items: _engineers,
+                            emptyHint: context.isArabic
+                                ? 'لا يوجد مهندسون'
+                                : 'No engineers',
+                            onChanged: (v) => setState(() => _engineerId = v),
+                          ),
+                        ],
                         SizedBox(height: 12.h),
                         MyTextFormField(
                           controller: _location,
@@ -208,15 +345,14 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                         ),
                         SizedBox(height: 12.h),
                         MyTextFormField(
-                          controller: _engineer,
-                          label: context.tr('engineer'),
-                          hint: 'م. خالد العتيبي',
-                        ),
-                        SizedBox(height: 12.h),
-                        MyTextFormField(
                           controller: _area,
                           label: context.tr('unit_area'),
                           hint: '250 م²',
+                          validator: (v) => Validator.requiredField(
+                            context,
+                            v,
+                            label: context.tr('unit_area'),
+                          ),
                         ),
                         SizedBox(height: 12.h),
                         Row(
@@ -295,7 +431,8 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                     text: context.tr('create_project'),
                     height: 48.h,
                     borderRadius: 16.r,
-                    onPressed: _submit,
+                    isLoading: _saving,
+                    onPressed: _saving || _loadingLookups ? null : _submit,
                   ),
                 ],
               ),

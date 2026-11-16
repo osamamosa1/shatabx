@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/assets.dart';
 import '../../../../core/utils/values/svg_manager.dart';
@@ -12,9 +13,12 @@ import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/app_svg.dart';
+import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
+import '../../../../injection_container.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
+import '../../../content/data/datasources/content_remote_data_source.dart';
 import '../../../language/presentation/cubit/locale_cubit.dart';
 
 class EngineerManagementScreen extends StatefulWidget {
@@ -27,28 +31,27 @@ class EngineerManagementScreen extends StatefulWidget {
 
 class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
   String _query = '';
-  final List<({String name, String role, String avatar})> _engineers = [
-    (
-      name: 'م. خالد العتيبي',
-      role: 'مهندس موقع أول',
-      avatar: ImgAssets.engineerAvatar,
-    ),
-    (
-      name: 'م. فيصل الدوسري',
-      role: 'مهندس تشطيبات',
-      avatar: ImgAssets.companyAvatar,
-    ),
-    (
-      name: 'م. سارة القحطاني',
-      role: 'مهندسة جودة',
-      avatar: ImgAssets.engineerAvatar,
-    ),
-  ];
+  late Future<List<Map<String, dynamic>>> _future;
 
-  void _addEngineerDialog() {
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() {
+    return ServiceLocator.instance<ContentRemoteDataSource>().getEngineers();
+  }
+
+  void _reload() => setState(() => _future = _load());
+
+  Future<void> _addEngineerDialog() async {
     final nameCtrl = TextEditingController();
-    final roleCtrl = TextEditingController();
-    showModalBottomSheet<void>(
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    var saving = false;
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.white,
@@ -56,50 +59,89 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20.w,
-            16.h,
-            20.w,
-            MediaQuery.of(ctx).viewInsets.bottom + 24.h,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(context.tr('add_engineer'), style: TextStyles.bold18()),
-              SizedBox(height: 12.h),
-              MyTextFormField(
-                controller: nameCtrl,
-                label: context.tr('engineer'),
-                hint: 'م. أحمد محمود',
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                16.h,
+                20.w,
+                MediaQuery.of(ctx).viewInsets.bottom + 24.h,
               ),
-              SizedBox(height: 10.h),
-              MyTextFormField(
-                controller: roleCtrl,
-                label: context.tr('phase'),
-                hint: 'مهندس موقع',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(context.tr('add_engineer'), style: TextStyles.bold18()),
+                  SizedBox(height: 12.h),
+                  MyTextFormField(
+                    controller: nameCtrl,
+                    label: context.tr('engineer'),
+                    hint: 'م. أحمد محمود',
+                  ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: phoneCtrl,
+                    label: context.tr('phone'),
+                    hint: '01000000000',
+                  ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: emailCtrl,
+                    label: context.tr('email'),
+                    hint: 'engineer@email.com',
+                  ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: passwordCtrl,
+                    label: context.tr('password'),
+                    hint: '******',
+                    obscure: true,
+                  ),
+                  SizedBox(height: 16.h),
+                  MyDefaultButton(
+                    text: context.tr('save_data'),
+                    isLoading: saving,
+                    onPressed: () async {
+                      if (nameCtrl.text.trim().isEmpty ||
+                          phoneCtrl.text.trim().isEmpty ||
+                          emailCtrl.text.trim().isEmpty ||
+                          passwordCtrl.text.trim().isEmpty) {
+                        return;
+                      }
+                      setModal(() => saving = true);
+                      try {
+                        await ServiceLocator.instance<ContentRemoteDataSource>()
+                            .addEngineer(
+                          name: nameCtrl.text,
+                          phone: phoneCtrl.text,
+                          email: emailCtrl.text,
+                          password: passwordCtrl.text,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          _reload();
+                          AppSnackBar.show(
+                            context,
+                            context.tr('engineer_added'),
+                          );
+                        }
+                      } catch (error) {
+                        setModal(() => saving = false);
+                        if (mounted) {
+                          AppSnackBar.show(
+                            context,
+                            resolveErrorMessage(context, error.toString()),
+                            error: true,
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
               ),
-              SizedBox(height: 16.h),
-              MyDefaultButton(
-                text: context.tr('save_data'),
-                onPressed: () {
-                  if (nameCtrl.text.trim().isEmpty) return;
-                  setState(() {
-                    _engineers.insert(0, (
-                      name: nameCtrl.text.trim(),
-                      role: roleCtrl.text.trim().isEmpty
-                          ? 'مهندس موقع'
-                          : roleCtrl.text.trim(),
-                      avatar: ImgAssets.engineerAvatar,
-                    ));
-                  });
-                  Navigator.pop(ctx);
-                  AppSnackBar.show(context, context.tr('engineer_added'));
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -108,10 +150,6 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final rtl = Directionality.of(context) == TextDirection.rtl;
-    final filtered = _engineers
-        .where((e) => e.name.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -131,68 +169,111 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
         children: [
           _CurvedPrimaryHeader(title: context.tr('manage_engineers'), rtl: rtl),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 80.h),
-              children: [
-                _SearchBox(
-                  hint: context.tr('search_engineer'),
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-                SizedBox(height: 14.h),
-                ...List.generate(filtered.length, (i) {
-                  final item = filtered[i];
-                  return SoftRise(
-                    delay: Duration(milliseconds: 40 + (i * 45)),
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: 10.h),
-                      padding: EdgeInsets.all(12.r),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: AppColors.cardShadow,
-                      ),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Image.asset(
-                              item.avatar,
-                              width: 42.r,
-                              height: 42.r,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(item.name, style: TextStyles.bold14()),
-                                Text(
-                                  item.role,
-                                  style: TextStyles.regular12(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () =>
-                                setState(() => _engineers.remove(item)),
-                            icon: Icon(
-                              Icons.delete_outline_rounded,
-                              color: AppColors.error,
-                              size: 20.r,
-                            ),
-                          ),
-                        ],
-                      ),
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const LoadingView();
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      resolveErrorMessage(context, snapshot.error.toString()),
                     ),
                   );
-                }),
-              ],
+                }
+                final filtered = (snapshot.data ?? const [])
+                    .where((e) {
+                      final name = e['name']?.toString() ?? '';
+                      return name.toLowerCase().contains(_query.toLowerCase());
+                    })
+                    .toList();
+                return ListView(
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 80.h),
+                  children: [
+                    _SearchBox(
+                      hint: context.tr('search_engineer'),
+                      onChanged: (v) => setState(() => _query = v),
+                    ),
+                    SizedBox(height: 14.h),
+                    ...List.generate(filtered.length, (i) {
+                      final item = filtered[i];
+                      final name = item['name']?.toString() ?? '-';
+                      final role = item['email']?.toString() ??
+                          item['phone']?.toString() ??
+                          '';
+                      final id = item['id']?.toString() ?? '';
+                      return SoftRise(
+                        delay: Duration(milliseconds: 40 + (i * 45)),
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 10.h),
+                          padding: EdgeInsets.all(12.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(14.r),
+                            border: Border.all(color: AppColors.border),
+                            boxShadow: AppColors.cardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10.r),
+                                child: Image.asset(
+                                  ImgAssets.engineerAvatar,
+                                  width: 42.r,
+                                  height: 42.r,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(name, style: TextStyles.bold14()),
+                                    Text(
+                                      role,
+                                      style: TextStyles.regular12(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () async {
+                                  final host = this.context;
+                                  try {
+                                    await ServiceLocator.instance<
+                                            ContentRemoteDataSource>()
+                                        .deleteEngineer(id);
+                                    _reload();
+                                  } catch (error) {
+                                    if (!host.mounted) return;
+                                    AppSnackBar.show(
+                                      host,
+                                      resolveErrorMessage(
+                                        host,
+                                        error.toString(),
+                                      ),
+                                      error: true,
+                                    );
+                                  }
+                                },
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: AppColors.error,
+                                  size: 20.r,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -210,16 +291,26 @@ class ClientManagementScreen extends StatefulWidget {
 
 class _ClientManagementScreenState extends State<ClientManagementScreen> {
   String _query = '';
-  final List<({String name, String phone})> _clients = [
-    (name: 'علاء صفوان', phone: '+201208354274'),
-    (name: 'يزيد حسن', phone: '+201140563239'),
-    (name: 'معاذ أبوبكر', phone: '+201067857630'),
-  ];
+  late Future<List<Map<String, dynamic>>> _future;
 
-  void _addClientDialog() {
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() {
+    return ServiceLocator.instance<ContentRemoteDataSource>().getCustomers();
+  }
+
+  void _reload() => setState(() => _future = _load());
+
+  Future<void> _addClientDialog() async {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    showModalBottomSheet<void>(
+    final emailCtrl = TextEditingController();
+    var saving = false;
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.white,
@@ -227,49 +318,79 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20.w,
-            16.h,
-            20.w,
-            MediaQuery.of(ctx).viewInsets.bottom + 24.h,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(context.tr('add_client'), style: TextStyles.bold18()),
-              SizedBox(height: 12.h),
-              MyTextFormField(
-                controller: nameCtrl,
-                label: context.tr('client_name'),
-                hint: 'علاء صفوان',
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                16.h,
+                20.w,
+                MediaQuery.of(ctx).viewInsets.bottom + 24.h,
               ),
-              SizedBox(height: 10.h),
-              MyTextFormField(
-                controller: phoneCtrl,
-                label: context.tr('phone'),
-                hint: '+201010254896',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(context.tr('add_client'), style: TextStyles.bold18()),
+                  SizedBox(height: 12.h),
+                  MyTextFormField(
+                    controller: nameCtrl,
+                    label: context.tr('client_name'),
+                    hint: 'علاء صفوان',
+                  ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: phoneCtrl,
+                    label: context.tr('phone'),
+                    hint: '01000000000',
+                  ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: emailCtrl,
+                    label: context.tr('email'),
+                    hint: 'client@email.com',
+                  ),
+                  SizedBox(height: 16.h),
+                  MyDefaultButton(
+                    text: context.tr('save_data'),
+                    isLoading: saving,
+                    onPressed: () async {
+                      if (nameCtrl.text.trim().isEmpty ||
+                          phoneCtrl.text.trim().isEmpty) {
+                        return;
+                      }
+                      setModal(() => saving = true);
+                      try {
+                        await ServiceLocator.instance<ContentRemoteDataSource>()
+                            .addCustomer(
+                          name: nameCtrl.text,
+                          phone: phoneCtrl.text,
+                          email: emailCtrl.text,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          _reload();
+                          AppSnackBar.show(
+                            context,
+                            context.tr('client_added'),
+                          );
+                        }
+                      } catch (error) {
+                        setModal(() => saving = false);
+                        if (mounted) {
+                          AppSnackBar.show(
+                            context,
+                            resolveErrorMessage(context, error.toString()),
+                            error: true,
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
               ),
-              SizedBox(height: 16.h),
-              MyDefaultButton(
-                text: context.tr('save_data'),
-                onPressed: () {
-                  if (nameCtrl.text.trim().isEmpty) return;
-                  setState(() {
-                    _clients.insert(0, (
-                      name: nameCtrl.text.trim(),
-                      phone: phoneCtrl.text.trim().isEmpty
-                          ? '+201000000000'
-                          : phoneCtrl.text.trim(),
-                    ));
-                  });
-                  Navigator.pop(ctx);
-                  AppSnackBar.show(context, context.tr('client_added'));
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -278,10 +399,6 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final rtl = Directionality.of(context) == TextDirection.rtl;
-    final filtered = _clients
-        .where((c) => c.name.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -301,73 +418,114 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
         children: [
           _CurvedPrimaryHeader(title: context.tr('manage_clients'), rtl: rtl),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 80.h),
-              children: [
-                _SearchBox(
-                  hint: context.tr('search_client'),
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-                SizedBox(height: 14.h),
-                ...List.generate(filtered.length, (i) {
-                  final item = filtered[i];
-                  return SoftRise(
-                    delay: Duration(milliseconds: 40 + (i * 45)),
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: 10.h),
-                      padding: EdgeInsets.all(14.r),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: AppColors.cardShadow,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40.r,
-                            height: 40.r,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primarySoft,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.person_outline_rounded,
-                              color: AppColors.primary,
-                              size: 20.r,
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(item.name, style: TextStyles.bold14()),
-                                Text(
-                                  item.phone,
-                                  style: TextStyles.regular12(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () =>
-                                setState(() => _clients.remove(item)),
-                            icon: Icon(
-                              Icons.delete_outline_rounded,
-                              color: AppColors.error,
-                              size: 20.r,
-                            ),
-                          ),
-                        ],
-                      ),
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const LoadingView();
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      resolveErrorMessage(context, snapshot.error.toString()),
                     ),
                   );
-                }),
-              ],
+                }
+                final filtered = (snapshot.data ?? const [])
+                    .where((c) {
+                      final name = c['name']?.toString() ?? '';
+                      return name.toLowerCase().contains(_query.toLowerCase());
+                    })
+                    .toList();
+                return ListView(
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 80.h),
+                  children: [
+                    _SearchBox(
+                      hint: context.tr('search_client'),
+                      onChanged: (v) => setState(() => _query = v),
+                    ),
+                    SizedBox(height: 14.h),
+                    ...List.generate(filtered.length, (i) {
+                      final item = filtered[i];
+                      final name = item['name']?.toString() ?? '-';
+                      final phone = item['phone']?.toString() ?? '';
+                      final id = item['id']?.toString() ?? '';
+                      return SoftRise(
+                        delay: Duration(milliseconds: 40 + (i * 45)),
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 10.h),
+                          padding: EdgeInsets.all(14.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(14.r),
+                            border: Border.all(color: AppColors.border),
+                            boxShadow: AppColors.cardShadow,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40.r,
+                                height: 40.r,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person_outline_rounded,
+                                  color: AppColors.primary,
+                                  size: 20.r,
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(name, style: TextStyles.bold14()),
+                                    Text(
+                                      phone,
+                                      style: TextStyles.regular12(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () async {
+                                  final host = this.context;
+                                  try {
+                                    await ServiceLocator.instance<
+                                            ContentRemoteDataSource>()
+                                        .deleteCustomer(id);
+                                    _reload();
+                                  } catch (error) {
+                                    if (!host.mounted) return;
+                                    AppSnackBar.show(
+                                      host,
+                                      resolveErrorMessage(
+                                        host,
+                                        error.toString(),
+                                      ),
+                                      error: true,
+                                    );
+                                  }
+                                },
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: AppColors.error,
+                                  size: 20.r,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -385,6 +543,14 @@ class SubscriptionsScreen extends StatefulWidget {
 
 class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   bool _activeTab = true;
+  late Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ServiceLocator.instance<ContentRemoteDataSource>()
+        .getSubscriptions();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -395,231 +561,211 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         children: [
           _CurvedPrimaryHeader(title: context.tr('subscriptions'), rtl: rtl),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
-              children: [
-                Container(
-                  height: 46.h,
-                  padding: EdgeInsets.all(4.r),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(14.r),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _activeTab = true),
-                          borderRadius: BorderRadius.circular(10.r),
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _activeTab
-                                  ? AppColors.primary
-                                  : Colors.transparent,
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const LoadingView();
+                }
+                final all = snapshot.data ?? const <Map<String, dynamic>>[];
+                final filtered = all.where((item) {
+                  final active = item['active']?.toString() == '1' ||
+                      item['active'] == 1 ||
+                      item['active'] == true;
+                  return _activeTab ? active : !active;
+                }).toList();
+                return ListView(
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
+                  children: [
+                    Container(
+                      height: 46.h,
+                      padding: EdgeInsets.all(4.r),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(14.r),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() => _activeTab = true),
                               borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            child: Text(
-                              context.tr('active_subscriptions'),
-                              style: TextStyles.bold12(
-                                color: _activeTab
-                                    ? AppColors.white
-                                    : AppColors.textSecondary,
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _activeTab
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Text(
+                                  context.tr('active_subscriptions'),
+                                  style: TextStyles.bold12(
+                                    color: _activeTab
+                                        ? AppColors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _activeTab = false),
-                          borderRadius: BorderRadius.circular(10.r),
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: !_activeTab
-                                  ? AppColors.primary
-                                  : Colors.transparent,
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() => _activeTab = false),
                               borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            child: Text(
-                              context.tr('expired_subscriptions'),
-                              style: TextStyles.bold12(
-                                color: !_activeTab
-                                    ? AppColors.white
-                                    : AppColors.textSecondary,
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: !_activeTab
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Text(
+                                  context.tr('expired_subscriptions'),
+                                  style: TextStyles.bold12(
+                                    color: !_activeTab
+                                        ? AppColors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                SoftRise(
-                  child: Container(
-                    padding: EdgeInsets.all(18.r),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(20.r),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: AppColors.cardShadow,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 56.r,
-                              height: 56.r,
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(14.r),
-                              ),
-                              child: Icon(
-                                Icons.workspace_premium_rounded,
-                                color: AppColors.primary,
-                                size: 30.r,
-                              ),
+                    SizedBox(height: 16.h),
+                    if (filtered.isEmpty)
+                      SoftRise(
+                        child: Container(
+                          padding: EdgeInsets.all(18.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(
+                            context.isArabic
+                                ? 'لا توجد اشتراكات في هذا التبويب'
+                                : 'No subscriptions in this tab',
+                            style: TextStyles.regular14(
+                              color: AppColors.textSecondary,
                             ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          ),
+                        ),
+                      ),
+                    ...List.generate(filtered.length, (index) {
+                      final item = filtered[index];
+                      final packageName =
+                          item['package']?['name']?.toString() ??
+                              item['package_id']?.toString() ??
+                              (context.isArabic ? 'باقة' : 'Package');
+                      final endDate = item['end_date']?.toString() ?? '-';
+                      final projects =
+                          item['num_projects']?.toString() ?? '0';
+                      final engineers =
+                          item['num_engineers']?.toString() ?? '0';
+                      return SoftRise(
+                        delay: Duration(milliseconds: 40 + (index * 40)),
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 12.h),
+                          padding: EdgeInsets.all(18.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(color: AppColors.border),
+                            boxShadow: AppColors.cardShadow,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
                                 children: [
-                                  Text(
-                                    _activeTab
-                                        ? (context.isArabic
-                                              ? 'باقة بريميوم الاحترافية'
-                                              : 'Premium Pro Plan')
-                                        : (context.isArabic
-                                              ? 'الباقة الأساسية'
-                                              : 'Starter Plan'),
-                                    style: TextStyles.bold18(
-                                      color: AppColors.text,
+                                  Container(
+                                    width: 56.r,
+                                    height: 56.r,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySoft,
+                                      borderRadius: BorderRadius.circular(14.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.workspace_premium_rounded,
+                                      color: AppColors.primary,
+                                      size: 30.r,
                                     ),
                                   ),
-                                  Text(
-                                    context.isArabic
-                                        ? 'الأنسب لشركات المقاولات والتشطيبات'
-                                        : 'Best for contracting & finishing firms',
-                                    style: TextStyles.regular12(
-                                      color: AppColors.textSecondary,
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          packageName,
+                                          style: TextStyles.bold18(
+                                            color: AppColors.text,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${context.isArabic ? 'السعر' : 'Price'}: ${item['price'] ?? '-'}',
+                                          style: TextStyles.regular12(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              context.isArabic ? '25 مشروعاً' : '25 Projects',
-                              style: TextStyles.bold14(
-                                color: AppColors.primary,
+                              SizedBox(height: 16.h),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    context.isArabic
+                                        ? '$projects مشروع'
+                                        : '$projects Projects',
+                                    style: TextStyles.bold14(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  Text(
+                                    context.isArabic
+                                        ? '$engineers مهندس'
+                                        : '$engineers Engineers',
+                                    style: TextStyles.bold14(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              context.isArabic ? '15 مهندساً' : '15 Engineers',
-                              style: TextStyles.bold14(
-                                color: AppColors.primary,
+                              SizedBox(height: 12.h),
+                              Container(
+                                padding: EdgeInsets.all(12.r),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                child: Text(
+                                  context.isArabic
+                                      ? 'صالحة حتى: $endDate'
+                                      : 'Valid until: $endDate',
+                                  style: TextStyles.bold14(
+                                    color: AppColors.text,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 12.h),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(100.r),
-                          child: LinearProgressIndicator(
-                            value: _activeTab ? 0.35 : 1.0,
-                            minHeight: 8.h,
-                            backgroundColor: AppColors.surface,
-                            color: AppColors.progressBlue,
+                            ],
                           ),
                         ),
-                        SizedBox(height: 16.h),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(12.r),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      context.isArabic
-                                          ? 'صالحة حتى'
-                                          : 'Valid until',
-                                      style: TextStyles.regular12(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      '15/06/2027',
-                                      style: TextStyles.bold14(
-                                        color: AppColors.text,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10.w),
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(12.r),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      context.isArabic
-                                          ? 'المشاريع المتبقية'
-                                          : 'Remaining projects',
-                                      style: TextStyles.regular12(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      _activeTab ? '17' : '0',
-                                      style: TextStyles.bold14(
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24.h),
-                MyDefaultButton(
-                  text: context.tr('upgrade_package'),
-                  height: 48.h,
-                  borderRadius: 16.r,
-                  onPressed: () =>
-                      AppSnackBar.show(context, context.tr('upgrade_package')),
-                ),
-              ],
+                      );
+                    }),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -786,8 +932,24 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class AboutAppScreen extends StatelessWidget {
+class AboutAppScreen extends StatefulWidget {
   const AboutAppScreen({super.key});
+
+  @override
+  State<AboutAppScreen> createState() => _AboutAppScreenState();
+}
+
+class _AboutAppScreenState extends State<AboutAppScreen> {
+  late final Future<String> _future = _load();
+
+  Future<String> _load() async {
+    try {
+      final item = await ServiceLocator.instance<ContentRemoteDataSource>()
+          .getSettingByKey('about_us');
+      if (item != null && item.value.trim().isNotEmpty) return item.value;
+    } catch (_) {}
+    return '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -816,13 +978,25 @@ class AboutAppScreen extends StatelessWidget {
                         border: Border.all(color: AppColors.border),
                         boxShadow: AppColors.cardShadow,
                       ),
-                      child: Text(
-                        context.isArabic
-                            ? 'منصة ShatabX هي الحل الرقمي المتكامل لشركات المقاولات والتشطيبات ومهندسي المواقع لإدارة المشاريع، متابعة مراحل التنفيذ، فحص الجودة الميداني، واعتماد التقارير المصورة بدقة واحترافية.'
-                            : 'ShatabX is the all-in-one digital platform for finishing companies and site engineers to manage construction projects, track phases, run field quality inspections, and approve photo reports seamlessly.',
-                        style: TextStyles.regular14(
-                          color: AppColors.textSecondary,
-                        ),
+                      child: FutureBuilder<String>(
+                        future: _future,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState !=
+                              ConnectionState.done) {
+                            return const LoadingView();
+                          }
+                          final remote = snapshot.data ?? '';
+                          return Text(
+                            remote.isEmpty
+                                ? (context.isArabic
+                                    ? 'منصة ShatabX هي الحل الرقمي المتكامل لشركات المقاولات والتشطيبات ومهندسي المواقع لإدارة المشاريع، متابعة مراحل التنفيذ، فحص الجودة الميداني، واعتماد التقارير المصورة بدقة واحترافية.'
+                                    : 'ShatabX is the all-in-one digital platform for finishing companies and site engineers to manage construction projects, track phases, run field quality inspections, and approve photo reports seamlessly.')
+                                : remote,
+                            style: TextStyles.regular14(
+                              color: AppColors.textSecondary,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -836,38 +1010,19 @@ class AboutAppScreen extends StatelessWidget {
   }
 }
 
-class FaqScreen extends StatelessWidget {
+class FaqScreen extends StatefulWidget {
   const FaqScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final faqs = [
-      (
-        q: context.isArabic
-            ? 'كيف أضيف مشروعاً جديداً وأربطه بقالب فحص؟'
-            : 'How do I create a project and link an inspection template?',
-        a: context.isArabic
-            ? 'من تبويب المشاريع اضغط على زر الإضافة (+)، وسيتم نسخ مراحل وبنود قالب الاستلامات المعتمد تلقائياً للمشروع.'
-            : 'From the Projects tab tap (+); the default inspection template phases and items are automatically copied.',
-      ),
-      (
-        q: context.isArabic
-            ? 'كيف يرفع المهندس تقرير الفحص الميداني؟'
-            : 'How does the site engineer submit an inspection report?',
-        a: context.isArabic
-            ? 'يدخل المهندس على المشروع المكلّف به، يختار المرحلة، ثم يحدد حالة كل بند (مطابق / غير مطابق) مع إرفاق الصور والملاحظات.'
-            : 'The engineer opens the assigned project phase, marks each checklist item with photos and notes, and submits.',
-      ),
-      (
-        q: context.isArabic
-            ? 'ماذا يحدث عند طلب إعادة الفحص؟'
-            : 'What happens when re-inspection is requested?',
-        a: context.isArabic
-            ? 'يصل إشعار فوري للمهندس المسؤول بالملاحظات المطلوب تلافيها ليعيد الفحص ويرفع الصور الجديدة.'
-            : 'The assigned engineer receives an instant notification with notes to fix and re-submit.',
-      ),
-    ];
+  State<FaqScreen> createState() => _FaqScreenState();
+}
 
+class _FaqScreenState extends State<FaqScreen> {
+  late final Future<List<Map<String, dynamic>>> _future =
+      ServiceLocator.instance<ContentRemoteDataSource>().getCommonQuestions();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFCFC),
       body: SafeArea(
@@ -875,41 +1030,68 @@ class FaqScreen extends StatelessWidget {
           children: [
             _WhiteHeader(title: context.tr('faq')),
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(16.r),
-                itemCount: faqs.length,
-                itemBuilder: (context, index) {
-                  final item = faqs[index];
-                  return SoftRise(
-                    delay: Duration(milliseconds: 40 + (index * 45)),
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: 10.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: AppColors.border),
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const LoadingView();
+                  }
+                  final faqs = snapshot.data ?? const [];
+                  if (faqs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        context.isArabic
+                            ? 'لا توجد أسئلة شائعة حالياً'
+                            : 'No FAQ items yet',
+                        style: TextStyles.regular14(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      child: ExpansionTile(
-                        title: Text(
-                          item.q,
-                          style: TextStyles.bold14(color: AppColors.text),
-                        ),
-                        childrenPadding: EdgeInsets.fromLTRB(
-                          16.w,
-                          0,
-                          16.w,
-                          14.h,
-                        ),
-                        children: [
-                          Text(
-                            item.a,
-                            style: TextStyles.regular12(
-                              color: AppColors.textSecondary,
-                            ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: EdgeInsets.all(16.r),
+                    itemCount: faqs.length,
+                    itemBuilder: (context, index) {
+                      final item = faqs[index];
+                      final q = item['question']?.toString() ??
+                          item['title']?.toString() ??
+                          '';
+                      final a = item['answer']?.toString() ??
+                          item['value']?.toString() ??
+                          '';
+                      return SoftRise(
+                        delay: Duration(milliseconds: 40 + (index * 45)),
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 10.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(color: AppColors.border),
                           ),
-                        ],
-                      ),
-                    ),
+                          child: ExpansionTile(
+                            title: Text(
+                              q,
+                              style: TextStyles.bold14(color: AppColors.text),
+                            ),
+                            childrenPadding: EdgeInsets.fromLTRB(
+                              16.w,
+                              0,
+                              16.w,
+                              14.h,
+                            ),
+                            children: [
+                              Text(
+                                a,
+                                style: TextStyles.regular12(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

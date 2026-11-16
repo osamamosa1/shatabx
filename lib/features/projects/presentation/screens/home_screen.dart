@@ -14,8 +14,10 @@ import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_svg.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
+import '../../../../injection_container.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
+import '../../../content/data/datasources/content_remote_data_source.dart';
 import '../../../projects/domain/entities/project_entity.dart';
 import '../../../projects/presentation/cubit/get_projects_cubit.dart';
 import '../../../projects/presentation/widgets/project_card.dart';
@@ -30,11 +32,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _query = '';
   ProjectStatus? _statusFilter;
+  int _engineersCount = 0;
 
   @override
   void initState() {
     super.initState();
     context.read<GetProjectsCubit>().load();
+    _loadEngineersCount();
+  }
+
+  Future<void> _loadEngineersCount() async {
+    try {
+      final items =
+          await ServiceLocator.instance<ContentRemoteDataSource>().getEngineers();
+      if (!mounted) return;
+      setState(() => _engineersCount = items.length);
+    } catch (_) {}
   }
 
   List<ProjectEntity> _filtered(List<ProjectEntity> items, BuildContext ctx) {
@@ -168,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
             user: user,
             allProjects: allProjects,
             projects: projects,
+            engineersCount: _engineersCount,
             onSearchChanged: (v) => setState(() => _query = v),
             onFilterTap: () => _openFilterSheet(context),
           );
@@ -182,6 +196,7 @@ class _CompanyHomeBody extends StatelessWidget {
     required this.user,
     required this.allProjects,
     required this.projects,
+    required this.engineersCount,
     required this.onSearchChanged,
     required this.onFilterTap,
   });
@@ -189,6 +204,7 @@ class _CompanyHomeBody extends StatelessWidget {
   final UserEntity? user;
   final List<ProjectEntity> allProjects;
   final List<ProjectEntity> projects;
+  final int engineersCount;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onFilterTap;
 
@@ -293,7 +309,7 @@ class _CompanyHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 160),
                       child: _CompanyStatCard(
                         icon: SvgAssets.engineerStat,
-                        value: 12,
+                        value: engineersCount,
                         label: context.tr('engineers_stat'),
                         onTap: () => context.push(AppRoutes.engineers),
                       ),
@@ -309,7 +325,9 @@ class _CompanyHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 210),
                       child: _CompanyStatCard(
                         icon: SvgAssets.buildingDone,
-                        value: 14,
+                        value: allProjects
+                            .where((p) => p.status == ProjectStatus.completed)
+                            .length,
                         label: context.tr('completed_projects_stat'),
                         onTap: () => context.go(AppRoutes.projects),
                       ),
@@ -321,7 +339,9 @@ class _CompanyHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 260),
                       child: _CompanyStatCard(
                         icon: SvgAssets.clock,
-                        value: 3,
+                        value: allProjects
+                            .where((p) => p.status == ProjectStatus.inProgress)
+                            .length,
                         label: context.tr('pending_reports_stat'),
                         onTap: () => context.go(AppRoutes.reports),
                       ),
@@ -491,7 +511,9 @@ class _EngineerHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 80),
                       child: _EngineerStatCard(
                         icon: SvgAssets.buildingDone,
-                        value: 14,
+                        value: allProjects
+                            .where((p) => p.status == ProjectStatus.completed)
+                            .length,
                         label: context.tr('completed_projects_stat'),
                       ),
                     ),
@@ -502,7 +524,9 @@ class _EngineerHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 150),
                       child: _EngineerStatCard(
                         icon: SvgAssets.reports,
-                        value: 3,
+                        value: allProjects
+                            .where((p) => p.status == ProjectStatus.started)
+                            .length,
                         label: context.tr('new_projects_stat'),
                       ),
                     ),
@@ -513,7 +537,9 @@ class _EngineerHomeBody extends StatelessWidget {
                       delay: const Duration(milliseconds: 220),
                       child: _EngineerStatCard(
                         icon: SvgAssets.clock,
-                        value: 3,
+                        value: allProjects
+                            .where((p) => p.status == ProjectStatus.inProgress)
+                            .length,
                         label: context.tr('in_progress_projects_stat'),
                       ),
                     ),

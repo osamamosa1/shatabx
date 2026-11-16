@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
+import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/assets.dart';
 import '../../../../core/utils/values/text_styles.dart';
@@ -10,6 +11,8 @@ import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/my_default_button.dart';
+import '../../../../injection_container.dart';
+import '../../domain/repositories/workspace_repository.dart';
 
 class InspectionRunScreen extends StatefulWidget {
   const InspectionRunScreen({
@@ -27,14 +30,48 @@ class InspectionRunScreen extends StatefulWidget {
 
 class _InspectionRunScreenState extends State<InspectionRunScreen> {
   final List<bool> _compliant = [false, true, true];
-  final TextEditingController _note = TextEditingController(
-    text: 'يوجد تمديد يحتاج تعديل في زاوية الممر',
-  );
+  final TextEditingController _note = TextEditingController();
+  bool _submitting = false;
 
   @override
   void dispose() {
     _note.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    final summary = StringBuffer()
+      ..writeln(
+        'Inspection: ${widget.projectName} / ${widget.phaseName}'.trim(),
+      );
+    for (var i = 0; i < _compliant.length; i++) {
+      summary.writeln(
+        '${i + 1}. ${_compliant[i] ? "OK" : "FAIL"}',
+      );
+    }
+    final noteText = _note.text.trim();
+    if (noteText.isNotEmpty) {
+      summary.writeln('Note: $noteText');
+    }
+    final result = await ServiceLocator.instance<WorkspaceRepository>()
+        .submitInspectionNote(summary.toString());
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    result.fold(
+      (failure) {
+        AppSnackBar.show(
+          context,
+          resolveErrorMessage(context, failure.message),
+          error: true,
+        );
+      },
+      (_) {
+        AppSnackBar.show(context, context.tr('inspection_submitted'));
+        context.pop();
+      },
+    );
   }
 
   @override
@@ -252,10 +289,8 @@ class _InspectionRunScreenState extends State<InspectionRunScreen> {
                 text: context.tr('submit_inspection'),
                 height: 48.h,
                 borderRadius: 16.r,
-                onPressed: () {
-                  AppSnackBar.show(context, context.tr('inspection_submitted'));
-                  context.pop();
-                },
+                isLoading: _submitting,
+                onPressed: _submitting ? null : _submit,
               ),
             ),
           ),

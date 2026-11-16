@@ -9,9 +9,30 @@ import '../../../../core/utils/values/text_styles.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_motion.dart';
 import '../../../../core/widgets/app_svg.dart';
+import '../../../../core/widgets/loading_view.dart';
+import '../../../../injection_container.dart';
+import '../../../content/data/datasources/content_remote_data_source.dart';
 
-class TermsScreen extends StatelessWidget {
+class TermsScreen extends StatefulWidget {
   const TermsScreen({super.key});
+
+  @override
+  State<TermsScreen> createState() => _TermsScreenState();
+}
+
+class _TermsScreenState extends State<TermsScreen> {
+  late final Future<String> _future = _load();
+
+  Future<String> _load() async {
+    try {
+      final content = ServiceLocator.instance<ContentRemoteDataSource>();
+      final item = await content.getSettingByKey('term_condition');
+      if (item != null && item.value.trim().isNotEmpty) {
+        return item.value;
+      }
+    } catch (_) {}
+    return '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,12 +118,24 @@ class TermsScreen extends StatelessWidget {
                           SizedBox(height: 12.h),
                           const Divider(color: AppColors.border, height: 1),
                           SizedBox(height: 14.h),
-                          Text(
-                            context.tr('terms_body'),
-                            textAlign: TextAlign.start,
-                            style: TextStyles.regular14(
-                              color: AppColors.textSecondary,
-                            ),
+                          FutureBuilder<String>(
+                            future: _future,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState !=
+                                  ConnectionState.done) {
+                                return const LoadingView();
+                              }
+                              final remote = snapshot.data ?? '';
+                              return Text(
+                                remote.isEmpty
+                                    ? context.tr('terms_body')
+                                    : remote,
+                                textAlign: TextAlign.start,
+                                style: TextStyles.regular14(
+                                  color: AppColors.textSecondary,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
