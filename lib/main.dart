@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'config/locale/app_localizations.dart';
@@ -12,12 +11,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ServiceLocator.init();
   await AppLocalizations.ensureLoaded();
-  await GoogleFonts.pendingFonts([
-    GoogleFonts.cairo(),
-    GoogleFonts.dmSans(), 
-    GoogleFonts.poppins(),
-    GoogleFonts.montserrat(),
-  ]);
   Bloc.observer = AppBlocObserver();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
