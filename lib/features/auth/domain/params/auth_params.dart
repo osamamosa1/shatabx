@@ -104,6 +104,8 @@ class CompleteProfileParams extends Equatable {
     this.lat,
     this.lng,
     this.commercialRegister,
+    this.email,
+    this.username,
   });
 
   final String address;
@@ -115,6 +117,8 @@ class CompleteProfileParams extends Equatable {
   final String? lat;
   final String? lng;
   final String? commercialRegister;
+  final String? email;
+  final String? username;
 
   @override
   List<Object?> get props => [
@@ -127,5 +131,35 @@ class CompleteProfileParams extends Equatable {
         lat,
         lng,
         commercialRegister,
+        email,
+        username,
       ];
+}
+
+class UpdatePasswordParams extends Equatable {
+  const UpdatePasswordParams({
+    required this.email,
+    required this.password,
+    this.oldPassword,
+  });
+
+  final String email;
+  final String password;
+  final String? oldPassword;
+
+  @override
+  List<Object?> get props => [email, password, oldPassword];
+}
+
+class UpdateEmailParams extends Equatable {
+  const UpdateEmailParams({
+    required this.email,
+    this.password,
+  });
+
+  final String email;
+  final String? password;
+
+  @override
+  List<Object?> get props => [email, password];
 }

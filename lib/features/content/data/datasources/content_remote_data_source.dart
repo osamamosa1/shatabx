@@ -38,8 +38,10 @@ abstract class ContentRemoteDataSource {
     required String phone,
     required String email,
     required String password,
+    String? specialty,
   });
   Future<void> deleteEngineer(String id);
+  Future<void> toggleEngineerActive(String id);
   Future<List<Map<String, dynamic>>> getCustomers();
   Future<void> addCustomer({
     required String name,
@@ -48,6 +50,7 @@ abstract class ContentRemoteDataSource {
     String? address,
   });
   Future<void> deleteCustomer(String id);
+  Future<void> requestSubscription(String packageId);
   Future<Map<String, dynamic>?> getHomeDashboard();
 }
 
@@ -114,6 +117,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     required String phone,
     required String email,
     required String password,
+    String? specialty,
   }) async {
     await client.post(
       EndPoints.engineers,
@@ -123,6 +127,8 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
         'email': email.trim(),
         'password': password,
         'password_confirmation': password,
+        if (specialty != null && specialty.trim().isNotEmpty)
+          'specialty': specialty.trim(),
       },
     );
   }
@@ -130,6 +136,11 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   @override
   Future<void> deleteEngineer(String id) async {
     await client.delete(EndPoints.engineer(id));
+  }
+
+  @override
+  Future<void> toggleEngineerActive(String id) async {
+    await client.post(EndPoints.engineerChangeActive(id));
   }
 
   @override
@@ -159,6 +170,21 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   @override
   Future<void> deleteCustomer(String id) async {
     await client.post(EndPoints.deleteCustomer(id));
+  }
+
+  @override
+  Future<void> requestSubscription(String packageId) async {
+    try {
+      await client.post(
+        EndPoints.subscribe,
+        body: <String, dynamic>{'package_id': packageId},
+      );
+    } catch (_) {
+      await client.post(
+        EndPoints.subscriptions,
+        body: <String, dynamic>{'package_id': packageId},
+      );
+    }
   }
 
   @override

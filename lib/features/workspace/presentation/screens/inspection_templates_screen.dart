@@ -39,7 +39,8 @@ class _InspectionTemplatesScreenState extends State<InspectionTemplatesScreen> {
 
   void _showCreateTemplateSheet(BuildContext context) {
     final nameController = TextEditingController();
-    final categoryController = TextEditingController();
+    var buildingCode = 'egypt_code';
+    var unitType = 'apartment';
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -48,63 +49,133 @@ class _InspectionTemplatesScreenState extends State<InspectionTemplatesScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20.w,
-            16.h,
-            20.w,
-            MediaQuery.of(ctx).viewInsets.bottom + 24.h,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                context.tr('create_template'),
-                style: TextStyles.bold18(color: AppColors.text),
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                16.h,
+                20.w,
+                MediaQuery.of(ctx).viewInsets.bottom + 24.h,
               ),
-              SizedBox(height: 12.h),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  hintText: context.isArabic
-                      ? 'اسم القالب (مثال: الكود المصري - فيلا)'
-                      : 'Template name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    context.tr('create_template'),
+                    style: TextStyles.bold18(color: AppColors.text),
                   ),
-                ),
-              ),
-              SizedBox(height: 10.h),
-              TextField(
-                controller: categoryController,
-                decoration: InputDecoration(
-                  hintText: context.isArabic ? 'التصنيف (تشطيبات)' : 'Category',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      hintText: context.isArabic
+                          ? 'اسم القالب (مثال: الكود المصري - فيلا)'
+                          : 'Template name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 10.h),
+                  InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: context.tr('building_code'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: buildingCode,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'egypt_code',
+                            child: Text(
+                              context.isArabic
+                                  ? 'الكود المصري'
+                                  : 'Egyptian code',
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'saudi_code',
+                            child: Text(
+                              context.isArabic
+                                  ? 'الكود السعودي'
+                                  : 'Saudi code',
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setModal(() => buildingCode = v);
+                        },
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: context.tr('unit_type'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: unitType,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'apartment',
+                            child: Text(
+                              context.isArabic ? 'شقة' : 'Apartment',
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'villa',
+                            child: Text(
+                              context.isArabic ? 'فيلا' : 'Villa',
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'shop',
+                            child: Text(
+                              context.isArabic ? 'محل' : 'Shop',
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setModal(() => unitType = v);
+                        },
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  MyDefaultButton(
+                    text: context.tr('save_data'),
+                    onPressed: () async {
+                      final title = nameController.text.trim();
+                      if (title.isEmpty) return;
+                      await ServiceLocator.instance<WorkspaceRepository>()
+                          .createTemplate(
+                        name: title.isEmpty
+                            ? '$buildingCode-$unitType'
+                            : title,
+                        category: unitType,
+                      );
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (!context.mounted) return;
+                      context.read<GetInspectionTemplatesCubit>().load();
+                      AppSnackBar.show(context, context.tr('save_data'));
+                    },
+                  ),
+                ],
               ),
-              SizedBox(height: 16.h),
-              MyDefaultButton(
-                text: context.tr('save_data'),
-                onPressed: () async {
-                  final title = nameController.text.trim();
-                  if (title.isEmpty) return;
-                  final category = categoryController.text.trim().isEmpty
-                      ? 'apartment'
-                      : categoryController.text.trim();
-                  await ServiceLocator.instance<WorkspaceRepository>()
-                      .createTemplate(name: title, category: category);
-                  if (!ctx.mounted) return;
-                  Navigator.pop(ctx);
-                  if (!context.mounted) return;
-                  context.read<GetInspectionTemplatesCubit>().load();
-                  AppSnackBar.show(context, context.tr('save_data'));
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

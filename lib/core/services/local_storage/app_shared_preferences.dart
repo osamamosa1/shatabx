@@ -19,6 +19,9 @@ abstract class AppSharedPreferences {
   String get languageCode;
   Future<void> saveLanguageCode(String code);
 
+  bool get notificationsEnabled;
+  Future<void> setNotificationsEnabled(bool value);
+
   Future<void> clearSession();
 }
 
@@ -31,6 +34,7 @@ class AppSharedPreferencesImpl implements AppSharedPreferences {
   static const _user = 'user';
   static const _token = 'access_token';
   static const _language = 'language_code';
+  static const _notifications = 'notifications_enabled';
 
   @override
   bool get onboardingSeen => instance.getBool(_onboarding) ?? false;
@@ -68,6 +72,14 @@ class AppSharedPreferencesImpl implements AppSharedPreferences {
   @override
   Future<void> saveLanguageCode(String code) =>
       instance.setString(_language, code);
+
+  @override
+  bool get notificationsEnabled =>
+      instance.getBool(_notifications) ?? true;
+
+  @override
+  Future<void> setNotificationsEnabled(bool value) =>
+      instance.setBool(_notifications, value);
 
   @override
   Future<void> clearSession() async {

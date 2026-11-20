@@ -23,6 +23,7 @@ import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import '../../features/onboarding/presentation/cubit/splash_cubit.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
+import '../../features/profile/presentation/screens/account_settings_screens.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_sub_screens.dart';
 import '../../features/projects/presentation/cubit/get_project_details_cubit.dart';
@@ -68,6 +69,10 @@ abstract class AppRoutes {
   static const clients = '/clients';
   static const subscriptions = '/subscriptions';
   static const settings = '/settings';
+  static const changePassword = '/change-password-settings';
+  static const changeEmail = '/change-email';
+  static const deleteAccount = '/delete-account';
+  static const packages = '/packages';
   static const aboutApp = '/about-app';
   static const faq = '/faq';
   static const notifications = '/notifications';
@@ -233,6 +238,26 @@ abstract class AppRouter {
         path: AppRoutes.settings,
         pageBuilder: (context, state) =>
             fadePage(state, const SettingsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.changePassword,
+        pageBuilder: (context, state) =>
+            fadePage(state, const ChangePasswordScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.changeEmail,
+        pageBuilder: (context, state) =>
+            fadePage(state, const ChangeEmailScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.deleteAccount,
+        pageBuilder: (context, state) =>
+            fadePage(state, const DeleteAccountScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.packages,
+        pageBuilder: (context, state) =>
+            fadePage(state, const PackagesScreen()),
       ),
       GoRoute(
         path: AppRoutes.aboutApp,

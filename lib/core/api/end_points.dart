@@ -39,6 +39,48 @@ abstract final class EndPoints {
   static String project(Object id) => '/projects/$id';
   static const users = '/users';
   static String user(Object id) => '/users/$id';
+  static const projectStages = '/project_stages';
+  static String projectStage(Object id) => '/project_stages/$id';
+  static String projectStageRecives(Object stageId) =>
+      '/project_stages/all_recive/$stageId';
+  static String projectStageShowRecive(Object id) =>
+      '/project_stages/show_recive/$id';
+  static const projectStageAddRecive = '/project_stages/add_recive';
+  static String projectStageEditRecive(Object id) =>
+      '/project_stages/edit_recive/$id';
+  static String projectStageDeleteRecive(Object id) =>
+      '/project_stages/delete_recive/$id';
+  static String projectStageSendReciveToCheck(Object id) =>
+      '/project_stages/send_recive_to_check/$id';
+  static String projectStageReturnReciveToCheck(Object id) =>
+      '/project_stages/return_recive_to_check/$id';
+  static String projectStageCertifiedRecive(Object id) =>
+      '/project_stages/certified_recive/$id';
+  static String projectStageAssignRecive(Object id) =>
+      '/project_stages/assign_recive_to_enginner/$id';
+  static String projectStagePdf(Object id) => '/project_stages/$id/pdf';
+  static String projectStageItems(Object reciveId) =>
+      '/project_stages/all_item/$reciveId';
+  static String projectStageShowItem(Object id) =>
+      '/project_stages/show_item/$id';
+  static const projectStageAddItem = '/project_stages/add_item';
+  static String projectStageDeleteItem(Object id) =>
+      '/project_stages/delete_item/$id';
+  static const projectStageChangeItemStatus =
+      '/project_stages/change_item_status';
+  static String projectStageRemoveItemStatus(Object id) =>
+      '/project_stages/remove_item_status/$id';
+  static String projectStageSendReciveToReview(Object id) =>
+      '/project_stages/send_recive_to_review/$id';
+  static const projectStageCommentItem = '/project_stages/comment_item';
+  static const projectStageReplyItemNotCompliant =
+      '/project_stages/reply_item_not_compliant';
+  static const projectProblems = '/project_problems';
+  static String projectProblem(Object id) => '/project_problems/$id';
+  static const projectProblemAddReply = '/project_problems/add_reply';
+  static const projectAttachments = '/project_attachments';
+  static String projectAttachment(Object id) => '/project_attachments/$id';
+  static const getProjectItemStatus = '/get_project_item_status';
 
   // Shared live resources
   static const packages = '/packages';

@@ -15,6 +15,10 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> completeProfile(
     CompleteProfileParams params,
   );
+  Future<Either<Failure, String>> updatePassword(UpdatePasswordParams params);
+  Future<Either<Failure, UserEntity>> updateEmail(UpdateEmailParams params);
+  Future<Either<Failure, Unit>> setNotificationsEnabled(bool enabled);
+  Future<Either<Failure, Unit>> deleteAccount();
   Future<Either<Failure, UserEntity>> getProfile();
   Future<Either<Failure, Unit>> logout();
 }

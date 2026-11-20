@@ -83,6 +83,12 @@ abstract class ServiceLocator {
     instance.registerLazySingleton(() => CompleteProfileUseCase(instance()));
     instance.registerLazySingleton(() => GetProfileUseCase(instance()));
     instance.registerLazySingleton(() => LogoutUseCase(instance()));
+    instance.registerLazySingleton(() => UpdatePasswordUseCase(instance()));
+    instance.registerLazySingleton(() => UpdateEmailUseCase(instance()));
+    instance.registerLazySingleton(
+      () => SetNotificationsEnabledUseCase(instance()),
+    );
+    instance.registerLazySingleton(() => DeleteAccountUseCase(instance()));
 
     instance.registerLazySingleton<ProjectsRepository>(
       () => ProjectsRepositoryImpl(instance()),

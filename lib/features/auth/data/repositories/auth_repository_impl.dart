@@ -98,6 +98,52 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, String>> updatePassword(
+    UpdatePasswordParams params,
+  ) async {
+    try {
+      return Right(await remote.updatePassword(params));
+    } catch (error) {
+      return Left(mapExceptionToFailure(error));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserEntity>> updateEmail(
+    UpdateEmailParams params,
+  ) async {
+    try {
+      final user = await remote.updateEmail(params);
+      await preferences.saveUser(user);
+      return Right(user);
+    } catch (error) {
+      return Left(mapExceptionToFailure(error));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> setNotificationsEnabled(bool enabled) async {
+    try {
+      await remote.setNotificationsEnabled(enabled);
+      await preferences.setNotificationsEnabled(enabled);
+      return const Right(unit);
+    } catch (error) {
+      return Left(mapExceptionToFailure(error));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteAccount() async {
+    try {
+      await remote.deleteAccount();
+      await preferences.clearSession();
+      return const Right(unit);
+    } catch (error) {
+      return Left(mapExceptionToFailure(error));
+    }
+  }
+
+  @override
   Future<Either<Failure, UserEntity>> getProfile() async {
     try {
       final user = await remote.getProfile(

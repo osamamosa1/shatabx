@@ -4,6 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/locale/app_localizations.dart';
+import '../../../../config/routes/app_routes.dart';
+import '../../../../core/services/local_storage/app_shared_preferences.dart';
 import '../../../../core/utils/error_message.dart';
 import '../../../../core/utils/values/app_colors.dart';
 import '../../../../core/utils/values/assets.dart';
@@ -17,6 +19,8 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/my_default_button.dart';
 import '../../../../core/widgets/my_text_field.dart';
 import '../../../../injection_container.dart';
+import '../../../auth/domain/entities/user_entity.dart';
+import '../../../auth/domain/usecases/auth_use_cases.dart';
 import '../../../auth/presentation/cubit/session_cubit.dart';
 import '../../../content/data/datasources/content_remote_data_source.dart';
 import '../../../language/presentation/cubit/locale_cubit.dart';
@@ -50,6 +54,7 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
     final phoneCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
+    final specialtyCtrl = TextEditingController();
     var saving = false;
     await showModalBottomSheet<void>(
       context: context,
@@ -98,6 +103,14 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
                     hint: '******',
                     obscure: true,
                   ),
+                  SizedBox(height: 10.h),
+                  MyTextFormField(
+                    controller: specialtyCtrl,
+                    label: context.tr('specialty'),
+                    hint: context.isArabic
+                        ? 'كهرباء / مدني / تشطيبات'
+                        : 'Electrical / Civil / Finishes',
+                  ),
                   SizedBox(height: 16.h),
                   MyDefaultButton(
                     text: context.tr('save_data'),
@@ -117,6 +130,7 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
                           phone: phoneCtrl.text,
                           email: emailCtrl.text,
                           password: passwordCtrl.text,
+                          specialty: specialtyCtrl.text,
                         );
                         if (ctx.mounted) Navigator.pop(ctx);
                         if (mounted) {
@@ -238,6 +252,35 @@ class _EngineerManagementScreenState extends State<EngineerManagementScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: context.isArabic
+                                    ? 'تفعيل/إيقاف'
+                                    : 'Toggle active',
+                                onPressed: () async {
+                                  final host = this.context;
+                                  try {
+                                    await ServiceLocator.instance<
+                                            ContentRemoteDataSource>()
+                                        .toggleEngineerActive(id);
+                                    _reload();
+                                  } catch (error) {
+                                    if (!host.mounted) return;
+                                    AppSnackBar.show(
+                                      host,
+                                      resolveErrorMessage(
+                                        host,
+                                        error.toString(),
+                                      ),
+                                      error: true,
+                                    );
+                                  }
+                                },
+                                icon: Icon(
+                                  Icons.power_settings_new_rounded,
+                                  color: AppColors.primary,
+                                  size: 20.r,
                                 ),
                               ),
                               IconButton(
@@ -863,25 +906,96 @@ class PersonalProfileScreen extends StatelessWidget {
   }
 }
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late bool _notifications;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications =
+        ServiceLocator.instance<AppSharedPreferences>().notificationsEnabled;
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    setState(() => _notifications = value);
+    final result =
+        await ServiceLocator.instance<SetNotificationsEnabledUseCase>()(value);
+    if (!mounted) return;
+    result.fold(
+      (failure) {
+        setState(() => _notifications = !value);
+        AppSnackBar.show(
+          context,
+          resolveErrorMessage(context, failure.message),
+          error: true,
+        );
+      },
+      (_) {},
+    );
+  }
+
+  Widget _tile({
+    required String title,
+    required String icon,
+    required VoidCallback onTap,
+    Color? color,
+    Widget? trailing,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        child: Row(
+          children: [
+            AppSvg(icon, size: 20.r, color: color ?? AppColors.primary),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyles.medium14(color: color ?? AppColors.text),
+              ),
+            ),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 20.r,
+                ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleCubit>().state.locale.languageCode;
+    final session = context.watch<SessionCubit>().state;
+    final isEngineer = session is SessionAuthenticated &&
+        session.user.role == AccountRole.engineer;
     return Scaffold(
       backgroundColor: const Color(0xFFFCFCFC),
       body: SafeArea(
         child: Column(
           children: [
-            _WhiteHeader(title: context.tr('settings')),
+            WhiteProfileHeader(title: context.tr('settings')),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.all(16.r),
                 children: [
                   SoftRise(
                     child: Container(
-                      padding: EdgeInsets.all(16.r),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(16.r),
@@ -889,34 +1003,74 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          InkWell(
+                          _tile(
+                            title: context.tr('language'),
+                            icon: SvgAssets.language,
+                            trailing: Text(
+                              locale == 'ar'
+                                  ? context.tr('arabic')
+                                  : context.tr('english'),
+                              style: TextStyles.bold14(
+                                color: AppColors.primary,
+                              ),
+                            ),
                             onTap: () => context.read<LocaleCubit>().setLocale(
                               locale == 'ar' ? 'en' : 'ar',
                             ),
+                          ),
+                          const Divider(height: 1, color: AppColors.border),
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 4.h),
                             child: Row(
                               children: [
                                 AppSvg(
-                                  SvgAssets.language,
+                                  SvgAssets.notification,
                                   size: 20.r,
                                   color: AppColors.primary,
                                 ),
                                 SizedBox(width: 10.w),
                                 Expanded(
                                   child: Text(
-                                    context.tr('language'),
+                                    context.tr('push_notifications'),
                                     style: TextStyles.medium14(),
                                   ),
                                 ),
-                                Text(
-                                  locale == 'ar'
-                                      ? context.tr('arabic')
-                                      : context.tr('english'),
-                                  style: TextStyles.bold14(
-                                    color: AppColors.primary,
-                                  ),
+                                Switch.adaptive(
+                                  value: _notifications,
+                                  activeTrackColor: AppColors.primary,
+                                  onChanged: _toggleNotifications,
                                 ),
                               ],
                             ),
+                          ),
+                          const Divider(height: 1, color: AppColors.border),
+                          _tile(
+                            title: context.tr('change_password'),
+                            icon: SvgAssets.settings,
+                            onTap: () =>
+                                context.push(AppRoutes.changePassword),
+                          ),
+                          if (!isEngineer) ...[
+                            const Divider(height: 1, color: AppColors.border),
+                            _tile(
+                              title: context.tr('change_email'),
+                              icon: SvgAssets.profile,
+                              onTap: () => context.push(AppRoutes.changeEmail),
+                            ),
+                            const Divider(height: 1, color: AppColors.border),
+                            _tile(
+                              title: context.tr('packages'),
+                              icon: SvgAssets.company,
+                              onTap: () => context.push(AppRoutes.packages),
+                            ),
+                          ],
+                          const Divider(height: 1, color: AppColors.border),
+                          _tile(
+                            title: context.tr('delete_account'),
+                            icon: SvgAssets.logout,
+                            color: AppColors.error,
+                            onTap: () =>
+                                context.push(AppRoutes.deleteAccount),
                           ),
                         ],
                       ),
@@ -958,7 +1112,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _WhiteHeader(title: context.tr('about_app')),
+            WhiteProfileHeader(title: context.tr('about_app')),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.all(16.r),
@@ -1028,7 +1182,7 @@ class _FaqScreenState extends State<FaqScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _WhiteHeader(title: context.tr('faq')),
+            WhiteProfileHeader(title: context.tr('faq')),
             Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: _future,
@@ -1155,8 +1309,8 @@ class _CurvedPrimaryHeader extends StatelessWidget {
   }
 }
 
-class _WhiteHeader extends StatelessWidget {
-  const _WhiteHeader({required this.title});
+class WhiteProfileHeader extends StatelessWidget {
+  const WhiteProfileHeader({super.key, required this.title});
 
   final String title;
 
