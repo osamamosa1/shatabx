@@ -15,8 +15,11 @@ import '../../features/auth/presentation/screens/account_type_screen.dart';
 import '../../features/auth/presentation/screens/complete_profile_screen.dart';
 import '../../features/auth/presentation/screens/join_method_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/package_details_screen.dart';
+import '../../features/auth/presentation/screens/pending_approval_screen.dart';
 import '../../features/auth/presentation/screens/register_company_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
+import '../../features/auth/presentation/screens/select_package_screen.dart';
 import '../../features/auth/presentation/screens/terms_screen.dart';
 import '../../features/auth/presentation/screens/verify_otp_screen.dart';
 import '../../features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -53,6 +56,9 @@ abstract class AppRoutes {
   static const accountType = '/account-type';
   static const joinMethod = '/join-method';
   static const register = '/register';
+  static const selectPackage = '/select-package';
+  static const packageDetails = '/package-details';
+  static const pendingApproval = '/pending-approval';
   static const login = '/login';
   static const otp = '/otp';
   static const resetPassword = '/reset-password';
@@ -134,6 +140,32 @@ abstract class AppRouter {
         ),
       ),
       GoRoute(
+        path: AppRoutes.selectPackage,
+        pageBuilder: (context, state) =>
+            fadePage(state, const SelectPackageScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.packageDetails,
+        pageBuilder: (context, state) {
+          final package = state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : <String, dynamic>{};
+          return fadePage(
+            state,
+            PackageDetailsScreen(package: package),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.pendingApproval,
+        pageBuilder: (context, state) => fadePage(
+          state,
+          PendingApprovalScreen(
+            email: state.extra is String ? state.extra as String : null,
+          ),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         pageBuilder: (context, state) {
           final roleName = state.uri.queryParameters['role'];
@@ -191,7 +223,9 @@ abstract class AppRouter {
           state,
           BlocProvider(
             create: (_) => ServiceLocator.instance<CompleteProfileCubit>(),
-            child: const CompleteProfileScreen(),
+            child: CompleteProfileScreen(
+              fromRegistration: state.extra == true,
+            ),
           ),
         ),
       ),

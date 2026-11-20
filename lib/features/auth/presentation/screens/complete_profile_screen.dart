@@ -22,7 +22,9 @@ import '../cubit/complete_profile_cubit.dart';
 import '../cubit/session_cubit.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
-  const CompleteProfileScreen({super.key});
+  const CompleteProfileScreen({super.key, this.fromRegistration = false});
+
+  final bool fromRegistration;
 
   @override
   State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
@@ -58,9 +60,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             resolveErrorMessage(context, state.message),
             error: true,
           );
+          // Keep Figma onboarding order even if profile API is unavailable yet.
+          if (widget.fromRegistration) {
+            context.go(AppRoutes.selectPackage);
+          }
         } else if (state is CompleteProfileSuccess) {
           context.read<SessionCubit>().setUser(state.user);
-          context.go(AppRoutes.home);
+          if (widget.fromRegistration) {
+            context.go(AppRoutes.selectPackage);
+          } else {
+            context.go(AppRoutes.home);
+          }
         }
       },
       child: Scaffold(

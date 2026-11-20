@@ -96,6 +96,9 @@ abstract class TextStyles {
   static TextStyle medium14({Color? color}) =>
       style(size: 14, weight: FontWeight.w600, color: color);
 
+  static TextStyle bold10({Color? color}) =>
+      style(size: 10, weight: FontWeight.w700, color: color, height: 1.2);
+
   static TextStyle bold14({Color? color}) =>
       style(size: 14, weight: FontWeight.w700, color: color, height: 1.35);
 

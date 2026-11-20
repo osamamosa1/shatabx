@@ -308,11 +308,7 @@ class _DialCode extends StatelessWidget {
             color: AppColors.hint,
           ),
           SizedBox(width: 6.w),
-          Container(
-            width: 1,
-            height: 16.h,
-            color: AppColors.border,
-          ),
+          Container(width: 1, height: 16.h, color: AppColors.border),
         ],
       ),
     );

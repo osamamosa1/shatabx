@@ -65,12 +65,16 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 error: true,
               );
             } else if (state is VerifyOtpSuccess) {
-              final user = widget.args.pendingUser;
-              if (widget.args.purpose == OtpPurpose.register &&
-                  user is UserEntity) {
-                context.read<SessionCubit>().setUser(user).then((_) {
-                  if (context.mounted) context.push(AppRoutes.completeProfile);
-                });
+              if (widget.args.purpose == OtpPurpose.register) {
+                final pending = widget.args.pendingUser;
+                if (pending is UserEntity) {
+                  context.read<SessionCubit>().setUser(pending).then((_) {
+                    if (!context.mounted) return;
+                    context.go(AppRoutes.completeProfile, extra: true);
+                  });
+                } else {
+                  context.go(AppRoutes.completeProfile, extra: true);
+                }
               } else {
                 context.push(AppRoutes.resetPassword, extra: widget.args.email);
               }
@@ -98,183 +102,219 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFFCFCFC),
         body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-            child: Column(
-              children: [
-                const AppBackButton(),
-                SizedBox(height: 24.h),
-                SoftDrop(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Column(
                     children: [
-                      Text(
-                        context.tr('otp_title'),
-                        style: TextStyles.bold24(color: AppColors.text),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        widget.args.purpose == OtpPurpose.register
-                            ? context.tr('otp_register_sub')
-                            : context.tr('otp_reset_sub'),
-                        textAlign: TextAlign.center,
-                        style: TextStyles.regular14(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (widget.args.email.isNotEmpty) ...[
-                        SizedBox(height: 4.h),
-                        Text(
-                          widget.args.email,
-                          style: TextStyles.medium14(color: AppColors.primary),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                SizedBox(height: 28.h),
-                Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final box = ((constraints.maxWidth - 36) / 4).clamp(
-                        52.0,
-                        72.0,
-                      );
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(4, (index) {
-                          return ZoomIn(
-                            delay: Duration(milliseconds: 70 + (index * 85)),
-                            duration: const Duration(milliseconds: 520),
-                            curve: Curves.easeOutBack,
-                            child: Container(
-                              width: box,
-                              height: box,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
-                                borderRadius: BorderRadius.circular(14.r),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x0D000000),
-                                    blurRadius: 12,
-                                  ),
-                                ],
+                      const AppBackButton(),
+                      SizedBox(height: 24.h.clamp(16.0, 28.0)),
+                      SoftDrop(
+                        child: Column(
+                          children: [
+                            Text(
+                              context.tr('otp_title'),
+                              textAlign: TextAlign.center,
+                              style: TextStyles.bold24(color: AppColors.text),
+                            ),
+                            SizedBox(height: 8.h),
+                            Text(
+                              widget.args.purpose == OtpPurpose.register
+                                  ? context.tr('otp_register_sub')
+                                  : context.tr('otp_reset_sub'),
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: TextStyles.regular14(
+                                color: AppColors.textSecondary,
                               ),
-                              child: TextField(
-                                controller: _controllers[index],
-                                focusNode: _nodes[index],
+                            ),
+                            if (widget.args.email.isNotEmpty) ...[
+                              SizedBox(height: 4.h),
+                              Text(
+                                widget.args.email,
                                 textAlign: TextAlign.center,
-                                keyboardType: TextInputType.number,
-                                style: TextStyles.bold22(color: AppColors.text),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(1),
-                                ],
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: AppColors.white,
-                                  contentPadding: EdgeInsets.zero,
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14.r),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.border,
+                                softWrap: true,
+                                style: TextStyles.medium14(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 28.h.clamp(18.0, 32.0)),
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: LayoutBuilder(
+                          builder: (context, boxConstraints) {
+                            final box =
+                                ((boxConstraints.maxWidth - 36) / 4).clamp(
+                              44.0,
+                              72.0,
+                            );
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(4, (index) {
+                                return Flexible(
+                                  child: ZoomIn(
+                                    delay: Duration(
+                                      milliseconds: 70 + (index * 85),
+                                    ),
+                                    duration: const Duration(milliseconds: 520),
+                                    curve: Curves.easeOutBack,
+                                    child: Container(
+                                      width: box,
+                                      height: box,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(14.r),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x0D000000),
+                                            blurRadius: 12,
+                                          ),
+                                        ],
+                                      ),
+                                      child: TextField(
+                                        controller: _controllers[index],
+                                        focusNode: _nodes[index],
+                                        textAlign: TextAlign.center,
+                                        keyboardType: TextInputType.number,
+                                        style: TextStyles.bold22(
+                                          color: AppColors.text,
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(1),
+                                        ],
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: AppColors.white,
+                                          contentPadding: EdgeInsets.zero,
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14.r),
+                                            borderSide: const BorderSide(
+                                              color: AppColors.border,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14.r),
+                                            borderSide: const BorderSide(
+                                              color: AppColors.primary,
+                                              width: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                        onChanged: (value) {
+                                          if (value.isNotEmpty && index < 3) {
+                                            _nodes[index + 1].requestFocus();
+                                          } else if (value.isEmpty &&
+                                              index > 0) {
+                                            _nodes[index - 1].requestFocus();
+                                          }
+                                        },
+                                      ),
                                     ),
                                   ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14.r),
-                                    borderSide: const BorderSide(
-                                      color: AppColors.primary,
-                                      width: 1.4,
+                                );
+                              }),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      SoftRise(
+                        delay: const Duration(milliseconds: 340),
+                        child: BlocBuilder<VerifyOtpCubit, VerifyOtpState>(
+                          builder: (context, state) {
+                            final seconds = switch (state) {
+                              VerifyOtpReady(:final secondsLeft) =>
+                                secondsLeft,
+                              VerifyOtpLoading(:final secondsLeft) =>
+                                secondsLeft,
+                              VerifyOtpError(:final secondsLeft) =>
+                                secondsLeft,
+                              _ => 0,
+                            };
+                            final label =
+                                '0:${seconds.toString().padLeft(2, '0')}';
+                            return Row(
+                              children: [
+                                Flexible(
+                                  child: TextButton(
+                                    onPressed: seconds == 0
+                                        ? () => context
+                                            .read<ResendOtpCubit>()
+                                            .resend(widget.args.email)
+                                        : null,
+                                    child: Text(
+                                      context.tr('resend_otp'),
+                                      softWrap: true,
+                                      style: TextStyles.medium12(
+                                        color: seconds == 0
+                                            ? AppColors.primary
+                                            : AppColors.hint,
+                                      ),
                                     ),
                                   ),
                                 ),
-                                onChanged: (value) {
-                                  if (value.isNotEmpty && index < 3) {
-                                    _nodes[index + 1].requestFocus();
-                                  } else if (value.isEmpty && index > 0) {
-                                    _nodes[index - 1].requestFocus();
-                                  }
-                                },
-                              ),
-                            ),
-                          );
-                        }),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                SoftRise(
-                  delay: const Duration(milliseconds: 340),
-                  child: BlocBuilder<VerifyOtpCubit, VerifyOtpState>(
-                    builder: (context, state) {
-                      final seconds = switch (state) {
-                        VerifyOtpReady(:final secondsLeft) => secondsLeft,
-                        VerifyOtpLoading(:final secondsLeft) => secondsLeft,
-                        VerifyOtpError(:final secondsLeft) => secondsLeft,
-                        _ => 0,
-                      };
-                      final label = '0:${seconds.toString().padLeft(2, '0')}';
-                      return Row(
-                        children: [
-                          TextButton(
-                            onPressed: seconds == 0
-                                ? () => context.read<ResendOtpCubit>().resend(
-                                    widget.args.email,
-                                  )
-                                : null,
-                            child: Text(
-                              context.tr('resend_otp'),
-                              style: TextStyles.medium12(
-                                color: seconds == 0
-                                    ? AppColors.primary
-                                    : AppColors.hint,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            label,
-                            style: TextStyles.medium14(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 16.h),
-                SoftRise(
-                  delay: const Duration(milliseconds: 420),
-                  child: BlocBuilder<VerifyOtpCubit, VerifyOtpState>(
-                    builder: (context, state) {
-                      return MyDefaultButton(
-                        text: context.tr('confirm'),
-                        height: 48.h,
-                        borderRadius: 16.r,
-                        isLoading: state is VerifyOtpLoading,
-                        onPressed: () {
-                          if (_code.length < 6) {
-                            AppSnackBar.show(
-                              context,
-                              context.tr('otp_incomplete'),
-                              error: true,
+                                SizedBox(width: 8.w),
+                                Text(
+                                  label,
+                                  style: TextStyles.medium14(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             );
-                            return;
-                          }
-                          context.read<VerifyOtpCubit>().verify(
-                            email: widget.args.email,
-                            code: _code,
-                          );
-                        },
-                      );
-                    },
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      SoftRise(
+                        delay: const Duration(milliseconds: 420),
+                        child: BlocBuilder<VerifyOtpCubit, VerifyOtpState>(
+                          builder: (context, state) {
+                            return MyDefaultButton(
+                              text: context.tr('confirm'),
+                              height: 48.h.clamp(44.0, 56.0),
+                              borderRadius: 16.r,
+                              isLoading: state is VerifyOtpLoading,
+                              onPressed: () {
+                                if (_code.length < 4) {
+                                  AppSnackBar.show(
+                                    context,
+                                    context.tr('otp_incomplete'),
+                                    error: true,
+                                  );
+                                  return;
+                                }
+                                context.read<VerifyOtpCubit>().verify(
+                                  email: widget.args.email,
+                                  code: _code.substring(0, 4),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
